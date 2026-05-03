@@ -104,10 +104,12 @@ export default function AlbumPage() {
             objectFit: 'contain', borderRadius: '12px',
           }} />
           <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <div style={{ color: '#888', fontSize: '13px' }}>{selected.votes} голосов</div>
-          </div>
-          <div style={{ color: '#4E4E50', fontSize: '12px', marginTop: '20px' }}>
-            нажми чтобы закрыть
+            <div style={{ fontWeight: 600, fontSize: '15px', color: '#F0F0F0' }}>
+                {selected.author || 'Гость'}
+            </div>
+            <div style={{ color: '#4E4E50', fontSize: '13px', marginTop: '4px' }}>
+                {selected.votes} голосов
+            </div>
           </div>
         </div>
       )}

@@ -11,18 +11,35 @@ function getDeviceId() {
   return id
 }
 
+function getAuthor() {
+  return localStorage.getItem('tusim_author') || ''
+}
+
+function saveAuthor(name) {
+  localStorage.setItem('tusim_author', name)
+}
+
 export default function GuestClient({ event }) {
   const [photos, setPhotos] = useState([])
   const [cameraOpen, setCameraOpen] = useState(false)
   const [deviceId, setDeviceId] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [author, setAuthor] = useState('')
+  const [nameInput, setNameInput] = useState('')
+  const [showNameScreen, setShowNameScreen] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
 
   useEffect(() => {
     const id = getDeviceId()
     setDeviceId(id)
-    loadMyPhotos(id)
+    const savedAuthor = getAuthor()
+    if (savedAuthor) {
+      setAuthor(savedAuthor)
+      loadMyPhotos(id)
+    } else {
+      setShowNameScreen(true)
+    }
     localStorage.setItem('tusim_event_id', event.id)
     localStorage.setItem('tusim_event_code', event.code)
     localStorage.setItem('tusim_event_name', event.name)
@@ -32,6 +49,15 @@ export default function GuestClient({ event }) {
     const res = await fetch(`/api/my-photos?event_id=${event.id}&device_id=${id}`)
     const { photos: data } = await res.json()
     if (data) setPhotos(data.map(p => ({ ...p, mine: true })))
+  }
+
+  function confirmName() {
+    const name = nameInput.trim()
+    if (!name) return
+    saveAuthor(name)
+    setAuthor(name)
+    setShowNameScreen(false)
+    loadMyPhotos(deviceId)
   }
 
   const limit = event.photo_limit || 30
@@ -72,6 +98,7 @@ export default function GuestClient({ event }) {
       formData.append('file', blob, 'photo.jpg')
       formData.append('event_id', event.id)
       formData.append('device_id', deviceId)
+      formData.append('author', author)
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -91,6 +118,102 @@ export default function GuestClient({ event }) {
   }
 
   const myPhotos = photos.filter(p => p.mine)
+
+  if (showNameScreen) {
+    return (
+      <>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@400;500;600&display=swap');
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { background: #1A1A1D; }
+          .name-input {
+            width: 100%; padding: 16px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; color: #F0F0F0;
+            font-family: 'Onest', sans-serif; font-size: 18px;
+            outline: none; text-align: center;
+            transition: border-color 0.2s;
+          }
+          .name-input:focus { border-color: rgba(195,7,63,0.5); }
+          .name-input::placeholder { color: #4E4E50; }
+          .confirm-btn {
+            width: 100%; padding: 18px;
+            background: linear-gradient(135deg, #C3073F, #950740);
+            color: #fff; border: none; border-radius: 100px;
+            font-family: 'Onest', sans-serif; font-weight: 700;
+            font-size: 17px; cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+          }
+          .confirm-btn:hover { opacity: 0.9; transform: scale(1.02); }
+          .confirm-btn:active { transform: scale(0.97); }
+          .confirm-btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; transform: none; }
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .fade-up { animation: fadeUp 0.5s ease both; }
+        `}</style>
+
+        <main style={{
+          minHeight: '100vh', background: '#1A1A1D',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 24px', fontFamily: "'Onest', sans-serif",
+        }}>
+
+          <div className="fade-up" style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'rgba(195,7,63,0.1)', border: '1px solid rgba(195,7,63,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '36px', margin: '0 auto 24px',
+            }}>
+              👋
+            </div>
+            <h1 style={{
+              fontFamily: "'Unbounded', sans-serif", fontWeight: 900,
+              fontSize: '26px', color: '#F0F0F0',
+              letterSpacing: '-1px', marginBottom: '12px',
+            }}>
+              Привет!
+            </h1>
+            <p style={{ color: '#4E4E50', fontSize: '15px', lineHeight: 1.6 }}>
+              Ты на <span style={{ color: '#C3073F' }}>{event.name}</span><br/>
+              Как тебя зовут?
+            </p>
+          </div>
+
+          <div className="fade-up" style={{ width: '100%', maxWidth: '320px', animationDelay: '0.1s' }}>
+            <input
+              className="name-input"
+              placeholder="Твоё имя"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && confirmName()}
+              autoFocus
+            />
+            <div style={{ height: '16px' }} />
+            <button
+              className="confirm-btn"
+              onClick={confirmName}
+              disabled={!nameInput.trim()}
+            >
+              Погнали снимать
+            </button>
+          </div>
+
+          <p className="fade-up" style={{
+            color: '#333', fontSize: '12px', marginTop: '24px',
+            textAlign: 'center', animationDelay: '0.2s',
+          }}>
+            У тебя {limit} кадров · Выбирай лучшие моменты
+          </p>
+
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -154,7 +277,9 @@ export default function GuestClient({ event }) {
           }}>
             tusi<span style={{ color: '#C3073F' }}>'m</span>
           </h1>
-          <p style={{ color: '#4E4E50', fontSize: '14px' }}>{event.name}</p>
+          <p style={{ color: '#4E4E50', fontSize: '14px' }}>
+            {event.name} · <span style={{ color: '#888' }}>{author}</span>
+          </p>
         </div>
 
         <div style={{

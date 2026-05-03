@@ -10,6 +10,7 @@ export async function POST(request) {
   const file = formData.get('file')
   const eventId = formData.get('event_id')
   const deviceId = formData.get('device_id')
+  const author = formData.get('author') || 'Гость'
 
   const filename = `${eventId}/${Date.now()}.jpg`
   const buffer = await file.arrayBuffer()
@@ -32,6 +33,7 @@ export async function POST(request) {
       event_id: eventId,
       device_id: deviceId,
       url: urlData.publicUrl,
+      author: author,
       votes: 0,
     })
     .select()
