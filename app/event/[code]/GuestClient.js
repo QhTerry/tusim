@@ -20,8 +20,16 @@ export default function GuestClient({ event }) {
   const streamRef = useRef(null)
 
   useEffect(() => {
-    setDeviceId(getDeviceId())
+    const id = getDeviceId()
+    setDeviceId(id)
+    loadMyPhotos(id)
   }, [])
+
+  async function loadMyPhotos(id) {
+    const res = await fetch(`/api/my-photos?event_id=${event.id}&device_id=${id}`)
+    const { photos: data } = await res.json()
+    if (data) setPhotos(data.map(p => ({ ...p, mine: true })))
+  }
 
   const limit = event.photo_limit || 30
   const used = photos.filter(p => p.mine).length
@@ -45,7 +53,6 @@ export default function GuestClient({ event }) {
   async function takePhoto() {
     const video = videoRef.current
     const maxSize = 1200
-
     const scale = Math.min(maxSize / video.videoWidth, maxSize / video.videoHeight, 1)
     const width = Math.round(video.videoWidth * scale)
     const height = Math.round(video.videoHeight * scale)
@@ -208,7 +215,7 @@ export default function GuestClient({ event }) {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
               {myPhotos.map((photo, i) => (
-                <img key={photo.id || i} src={photo.url} style={{
+                <img key={photo.id || i} src={photo.url} loading="lazy" style={{
                   width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px',
                 }} />
               ))}

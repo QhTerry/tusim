@@ -83,7 +83,7 @@ export default function AlbumPage() {
           }}>
             {photos.map(photo => (
               <div key={photo.id} className="thumb" onClick={() => setSelected(photo)}>
-                <img src={photo.url} />
+                <img src={photo.url} loading="lazy" />
               </div>
             ))}
           </div>
