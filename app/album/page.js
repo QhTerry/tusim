@@ -1,21 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
 
-const MOCK_PHOTOS = [
-  { id: 1, url: 'https://picsum.photos/seed/1/400/400', author: 'Анна', votes: 24 },
-  { id: 2, url: 'https://picsum.photos/seed/2/400/400', author: 'Игорь', votes: 17 },
-  { id: 3, url: 'https://picsum.photos/seed/3/400/400', author: 'Света', votes: 31 },
-  { id: 4, url: 'https://picsum.photos/seed/4/400/400', author: 'Коля', votes: 8 },
-  { id: 5, url: 'https://picsum.photos/seed/5/400/400', author: 'Маша', votes: 45 },
-  { id: 6, url: 'https://picsum.photos/seed/6/400/400', author: 'Дима', votes: 12 },
-  { id: 7, url: 'https://picsum.photos/seed/7/400/400', author: 'Катя', votes: 19 },
-  { id: 8, url: 'https://picsum.photos/seed/8/400/400', author: 'Вася', votes: 6 },
-  { id: 9, url: 'https://picsum.photos/seed/9/400/400', author: 'Оля', votes: 33 },
-]
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function AlbumPage() {
+  const [photos, setPhotos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    loadPhotos()
+  }, [])
+
+  async function loadPhotos() {
+    const { data } = await supabase
+      .from('photos')
+      .select('*, events(name)')
+      .order('created_at', { ascending: false })
+    if (data) setPhotos(data)
+    setLoading(false)
+  }
 
   return (
     <>
@@ -23,8 +32,9 @@ export default function AlbumPage() {
         @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #1A1A1D; }
-        .thumb { transition: transform 0.15s; cursor: pointer; }
+        .thumb { transition: transform 0.15s; cursor: pointer; position: relative; overflow: hidden; }
         .thumb:active { transform: scale(0.95); }
+        .thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
       `}</style>
 
       <main style={{
@@ -33,7 +43,6 @@ export default function AlbumPage() {
         padding: '0 0 20px',
       }}>
 
-        {/* Шапка */}
         <div style={{ padding: '48px 20px 24px' }}>
           <h1 style={{
             fontFamily: "'Unbounded', sans-serif", fontWeight: 900,
@@ -42,29 +51,46 @@ export default function AlbumPage() {
             Альбом
           </h1>
           <p style={{ color: '#4E4E50', fontSize: '13px' }}>
-            {MOCK_PHOTOS.length} фото · Свадьба Маши и Коли
+            {loading ? 'Загружаем...' : `${photos.length} фото`}
           </p>
         </div>
 
-        {/* Сетка */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '2px',
-        }}>
-          {MOCK_PHOTOS.map(photo => (
-            <div key={photo.id} className="thumb" onClick={() => setSelected(photo)}>
-              <img src={photo.url} style={{
-                width: '100%', aspectRatio: '1',
-                objectFit: 'cover', display: 'block',
-              }} />
-            </div>
-          ))}
-        </div>
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#4E4E50', fontSize: '14px' }}>
+            Загружаем фото...
+          </div>
+        )}
+
+        {!loading && photos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: 'rgba(195,7,63,0.08)', border: '1px solid rgba(195,7,63,0.2)',
+              margin: '0 auto 12px', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+            }}>📸</div>
+            <p style={{ color: '#4E4E50', fontSize: '13px', lineHeight: 1.6 }}>
+              Пока нет фото<br/>Сделай первый кадр!
+            </p>
+          </div>
+        )}
+
+        {!loading && photos.length > 0 && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '2px',
+          }}>
+            {photos.map(photo => (
+              <div key={photo.id} className="thumb" onClick={() => setSelected(photo)}>
+                <img src={photo.url} />
+              </div>
+            ))}
+          </div>
+        )}
 
       </main>
 
-      {/* Просмотр фото */}
       {selected && (
         <div
           onClick={() => setSelected(null)}
@@ -79,8 +105,7 @@ export default function AlbumPage() {
             objectFit: 'contain', borderRadius: '12px',
           }} />
           <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <div style={{ fontWeight: 600, fontSize: '15px' }}>{selected.author}</div>
-            <div style={{ color: '#4E4E50', fontSize: '13px', marginTop: '4px' }}>
+            <div style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>
               {selected.votes} голосов
             </div>
           </div>
