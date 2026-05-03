@@ -621,7 +621,8 @@ export default function GuestClient({ event }) {
       {cameraOpen && (
         <div style={{
           position: 'fixed', inset: 0, background: '#000',
-          zIndex: 500, display: 'flex', flexDirection: 'column',
+          zIndex: 2000, // выше навигации (1000)
+          display: 'flex', flexDirection: 'column',
           animation: 'fadeIn 0.2s ease',
         }}>
           {/* Вспышка-эффект */}
@@ -633,26 +634,29 @@ export default function GuestClient({ event }) {
             }}/>
           )}
 
-          {/* Видео */}
+          {/* Видео — занимает весь экран */}
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
             style={{
-              flex: 1, width: '100%', objectFit: 'cover',
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
               transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
             }}
           />
 
-          {/* Верхняя панель управления */}
+          {/* Верхняя панель */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0,
-            padding: '52px 24px 16px',
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
+            paddingTop: 'max(52px, env(safe-area-inset-top, 52px))',
+            paddingLeft: '24px', paddingRight: '24px', paddingBottom: '20px',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.65), transparent)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            zIndex: 5,
           }}>
-            {/* Фонарик */}
             <button
               className={`cam-control-btn ${flashOn ? 'active' : ''}`}
               onClick={toggleFlash}
@@ -662,56 +666,68 @@ export default function GuestClient({ event }) {
               ⚡
             </button>
 
-            {/* Остаток кадров */}
             <div style={{
-              background: 'rgba(0,0,0,0.5)', borderRadius: '100px',
-              padding: '6px 16px', fontSize: '13px', color: '#fff',
+              background: 'rgba(0,0,0,0.55)', borderRadius: '100px',
+              padding: '7px 18px', fontSize: '13px', color: '#fff',
               fontFamily: "'Onest', sans-serif", fontWeight: 600,
               backdropFilter: 'blur(8px)',
             }}>
               {remaining} кадров
             </div>
 
-            {/* Переключение камеры */}
             <button className="cam-control-btn" onClick={toggleCamera}>
               🔄
             </button>
           </div>
 
-          {/* Нижняя панель — кнопка съёмки */}
+          {/* Нижняя панель — фиксированная высота, не зависит от контента */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            padding: '24px 32px 52px',
-            background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+            height: '160px',
+            paddingBottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            paddingLeft: '36px', paddingRight: '36px',
+            zIndex: 5,
           }}>
+            {/* Отмена */}
             <button
               onClick={closeCamera}
               style={{
-                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                color: '#fff', borderRadius: '100px', padding: '12px 20px',
-                fontSize: '14px', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', borderRadius: '100px',
+                padding: '12px 22px', fontSize: '14px',
+                cursor: 'pointer',
                 fontFamily: "'Onest', sans-serif",
                 backdropFilter: 'blur(8px)',
                 WebkitTapHighlightColor: 'transparent',
+                flexShrink: 0,
               }}
             >
               Отмена
             </button>
 
-            <button className="snap-btn" onClick={takePhoto} />
+            {/* Кнопка съёмки — строго по центру */}
+            <button
+              className="snap-btn"
+              onClick={takePhoto}
+              style={{ flexShrink: 0 }}
+            />
 
-            {/* Превью последнего фото */}
-            {myPhotos[0] ? (
-              <div style={{
-                width: '52px', height: '52px', borderRadius: '12px',
-                overflow: 'hidden', border: '2px solid rgba(255,255,255,0.3)',
-              }}>
-                <img src={myPhotos[0].url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            ) : (
-              <div style={{ width: '52px' }} />
-            )}
+            {/* Превью или пустой блок */}
+            <div style={{ width: '52px', height: '52px', flexShrink: 0 }}>
+              {myPhotos[0] ? (
+                <img
+                  src={myPhotos[0].url}
+                  style={{
+                    width: '100%', height: '100%',
+                    objectFit: 'cover', borderRadius: '12px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                  }}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       )}
