@@ -23,6 +23,9 @@ export default function GuestClient({ event }) {
     const id = getDeviceId()
     setDeviceId(id)
     loadMyPhotos(id)
+    localStorage.setItem('tusim_event_id', event.id)
+    localStorage.setItem('tusim_event_code', event.code)
+    localStorage.setItem('tusim_event_name', event.name)
   }, [])
 
   async function loadMyPhotos(id) {

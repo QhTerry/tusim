@@ -12,15 +12,21 @@ export default function AlbumPage() {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [eventName, setEventName] = useState('')
 
   useEffect(() => {
-    loadPhotos()
+    const eventId = localStorage.getItem('tusim_event_id')
+    const name = localStorage.getItem('tusim_event_name')
+    if (name) setEventName(name)
+    if (eventId) loadPhotos(eventId)
+    else setLoading(false)
   }, [])
 
-  async function loadPhotos() {
+  async function loadPhotos(eventId) {
     const { data } = await supabase
       .from('photos')
-      .select('*, events(name)')
+      .select('*')
+      .eq('event_id', eventId)
       .order('created_at', { ascending: false })
     if (data) setPhotos(data)
     setLoading(false)
@@ -32,9 +38,9 @@ export default function AlbumPage() {
         @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #1A1A1D; }
-        .thumb { transition: transform 0.15s; cursor: pointer; position: relative; overflow: hidden; }
-        .thumb:active { transform: scale(0.95); }
-        .thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+        .thumb { cursor: pointer; overflow: hidden; }
+        .thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; transition: transform 0.2s; }
+        .thumb:active img { transform: scale(0.97); }
       `}</style>
 
       <main style={{
@@ -51,13 +57,13 @@ export default function AlbumPage() {
             Альбом
           </h1>
           <p style={{ color: '#4E4E50', fontSize: '13px' }}>
-            {loading ? 'Загружаем...' : `${photos.length} фото`}
+            {loading ? 'Загружаем...' : `${photos.length} фото · ${eventName}`}
           </p>
         </div>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#4E4E50', fontSize: '14px' }}>
-            Загружаем фото...
+            Загружаем...
           </div>
         )}
 
@@ -76,11 +82,7 @@ export default function AlbumPage() {
         )}
 
         {!loading && photos.length > 0 && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '2px',
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
             {photos.map(photo => (
               <div key={photo.id} className="thumb" onClick={() => setSelected(photo)}>
                 <img src={photo.url} loading="lazy" />
@@ -92,22 +94,17 @@ export default function AlbumPage() {
       </main>
 
       {selected && (
-        <div
-          onClick={() => setSelected(null)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)',
-            zIndex: 500, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', padding: '20px',
-          }}
-        >
+        <div onClick={() => setSelected(null)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)',
+          zIndex: 500, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', padding: '20px',
+        }}>
           <img src={selected.url} style={{
             maxWidth: '100%', maxHeight: '70vh',
             objectFit: 'contain', borderRadius: '12px',
           }} />
           <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <div style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>
-              {selected.votes} голосов
-            </div>
+            <div style={{ color: '#888', fontSize: '13px' }}>{selected.votes} голосов</div>
           </div>
           <div style={{ color: '#4E4E50', fontSize: '12px', marginTop: '20px' }}>
             нажми чтобы закрыть

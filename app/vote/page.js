@@ -27,36 +27,34 @@ export default function VotePage() {
   const maxVotes = sorted[0]?.votes || 1
 
   useEffect(() => {
-    loadPhotos()
+    const eventId = localStorage.getItem('tusim_event_id')
+    if (eventId) loadPhotos(eventId)
+    else setLoading(false)
   }, [])
 
-  async function loadPhotos() {
+  async function loadPhotos(eventId) {
     const { data } = await supabase
       .from('photos')
       .select('*')
+      .eq('event_id', eventId)
       .order('votes', { ascending: false })
     if (data) setPhotos(data)
     setLoading(false)
   }
 
   async function toggleVote(id) {
-    const deviceId = getDeviceId()
     const isVoted = voted.has(id)
+    const photo = photos.find(p => p.id === id)
+    const newVotes = photo.votes + (isVoted ? -1 : 1)
 
     setVoted(prev => {
       const next = new Set(prev)
       isVoted ? next.delete(id) : next.add(id)
       return next
     })
+    setPhotos(prev => prev.map(p => p.id === id ? { ...p, votes: newVotes } : p))
 
-    setPhotos(prev => prev.map(p =>
-      p.id === id ? { ...p, votes: p.votes + (isVoted ? -1 : 1) } : p
-    ))
-
-    await supabase
-      .from('photos')
-      .update({ votes: photos.find(p => p.id === id).votes + (isVoted ? -1 : 1) })
-      .eq('id', id)
+    await supabase.from('photos').update({ votes: newVotes }).eq('id', id)
   }
 
   return (
@@ -84,7 +82,6 @@ export default function VotePage() {
           border-color: rgba(195,7,63,0.4);
           color: #C3073F;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
 
       <main style={{
@@ -114,9 +111,7 @@ export default function VotePage() {
         </div>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#4E4E50' }}>
-            Загружаем...
-          </div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#4E4E50' }}>Загружаем...</div>
         )}
 
         {!loading && photos.length === 0 && (
@@ -125,99 +120,81 @@ export default function VotePage() {
           </div>
         )}
 
-        {!loading && view === 'top' && sorted.slice(0, 3).map((photo, i) => (
-          <div key={photo.id} style={{
-            background: '#1A1A1D',
-            border: `1px solid ${i === 0 ? 'rgba(195,7,63,0.5)' : '#2a2a2a'}`,
-            borderRadius: '20px', overflow: 'hidden',
-            display: 'flex', alignItems: 'center', gap: '16px',
-            padding: '12px', marginBottom: '12px',
-          }}>
-            <div style={{
-              fontFamily: "'Unbounded', sans-serif", fontWeight: 900,
-              fontSize: '28px', minWidth: '48px', textAlign: 'center',
-            }}>
-              {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-            </div>
-            <img src={photo.url} style={{
-              width: '72px', height: '72px',
-              objectFit: 'cover', borderRadius: '12px', flexShrink: 0,
-            }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  flex: 1, height: '4px', background: '#2a2a2a',
-                  borderRadius: '100px', overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%', borderRadius: '100px',
-                    background: 'linear-gradient(90deg, #6F2232, #C3073F)',
-                    width: `${(photo.votes / maxVotes) * 100}%`,
-                    transition: 'width 0.4s ease',
-                  }} />
+        {!loading && view === 'top' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {sorted.slice(0, 3).map((photo, i) => (
+              <div key={photo.id} style={{
+                background: '#1A1A1D',
+                border: `1px solid ${i === 0 ? 'rgba(195,7,63,0.5)' : '#2a2a2a'}`,
+                borderRadius: '20px', overflow: 'hidden',
+                display: 'flex', alignItems: 'center', gap: '16px', padding: '12px',
+              }}>
+                <div style={{ fontSize: '28px', minWidth: '48px', textAlign: 'center' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
                 </div>
-                <span style={{ fontSize: '13px', color: '#C3073F', fontWeight: 600 }}>
-                  {photo.votes}
-                </span>
-              </div>
-            </div>
-            <button
-              className="like-btn"
-              onClick={() => toggleVote(photo.id)}
-              style={{
-                background: voted.has(photo.id) ? 'rgba(195,7,63,0.15)' : '#222',
-                color: voted.has(photo.id) ? '#C3073F' : '#888',
-                border: voted.has(photo.id) ? '1px solid rgba(195,7,63,0.4)' : '1px solid #333',
-              }}
-            >
-              {voted.has(photo.id) ? '♥' : '♡'}
-            </button>
-          </div>
-        ))}
-
-        {!loading && view === 'grid' && sorted.map((photo, i) => (
-          <div key={photo.id} style={{
-            background: '#1A1A1D',
-            border: `1px solid ${i === 0 ? 'rgba(195,7,63,0.4)' : '#2a2a2a'}`,
-            borderRadius: '20px', overflow: 'hidden', marginBottom: '12px',
-          }}>
-            <img src={photo.url} style={{
-              width: '100%', aspectRatio: '1',
-              objectFit: 'cover', display: 'block',
-            }} />
-            <div style={{
-              padding: '14px 16px',
-              display: 'flex', alignItems: 'center', gap: '12px',
-            }}>
-              {i === 0 && (
-                <span style={{
-                  fontSize: '11px', fontWeight: 700,
-                  color: '#C3073F', background: 'rgba(195,7,63,0.1)',
-                  border: '1px solid rgba(195,7,63,0.3)',
-                  padding: '2px 8px', borderRadius: '100px',
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                }}>
-                  Топ
-                </span>
-              )}
-              <span style={{ flex: 1 }} />
-              <button
-                className="like-btn"
-                onClick={() => toggleVote(photo.id)}
-                style={{
+                <img src={photo.url} loading="lazy" style={{
+                  width: '72px', height: '72px',
+                  objectFit: 'cover', borderRadius: '12px', flexShrink: 0,
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '4px', background: '#2a2a2a', borderRadius: '100px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: '100px',
+                        background: 'linear-gradient(90deg, #6F2232, #C3073F)',
+                        width: `${(photo.votes / maxVotes) * 100}%`,
+                        transition: 'width 0.4s ease',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#C3073F', fontWeight: 600 }}>{photo.votes}</span>
+                  </div>
+                </div>
+                <button className="like-btn" onClick={() => toggleVote(photo.id)} style={{
                   background: voted.has(photo.id) ? 'rgba(195,7,63,0.15)' : '#222',
                   color: voted.has(photo.id) ? '#C3073F' : '#888',
                   border: voted.has(photo.id) ? '1px solid rgba(195,7,63,0.4)' : '1px solid #333',
-                }}
-              >
-                <span style={{ fontSize: '16px' }}>
+                }}>
                   {voted.has(photo.id) ? '♥' : '♡'}
-                </span>
-                {photo.votes}
-              </button>
-            </div>
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
+
+        {!loading && view === 'grid' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {sorted.map((photo, i) => (
+              <div key={photo.id} style={{
+                background: '#1A1A1D',
+                border: `1px solid ${i === 0 ? 'rgba(195,7,63,0.4)' : '#2a2a2a'}`,
+                borderRadius: '20px', overflow: 'hidden',
+              }}>
+                <img src={photo.url} loading="lazy" style={{
+                  width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block',
+                }} />
+                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {i === 0 && (
+                    <span style={{
+                      fontSize: '11px', fontWeight: 700, color: '#C3073F',
+                      background: 'rgba(195,7,63,0.1)', border: '1px solid rgba(195,7,63,0.3)',
+                      padding: '2px 8px', borderRadius: '100px',
+                      letterSpacing: '0.06em', textTransform: 'uppercase',
+                    }}>Топ</span>
+                  )}
+                  <span style={{ flex: 1 }} />
+                  <button className="like-btn" onClick={() => toggleVote(photo.id)} style={{
+                    background: voted.has(photo.id) ? 'rgba(195,7,63,0.15)' : '#222',
+                    color: voted.has(photo.id) ? '#C3073F' : '#888',
+                    border: voted.has(photo.id) ? '1px solid rgba(195,7,63,0.4)' : '1px solid #333',
+                  }}>
+                    <span style={{ fontSize: '16px' }}>{voted.has(photo.id) ? '♥' : '♡'}</span>
+                    {photo.votes}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
       </main>
     </>
