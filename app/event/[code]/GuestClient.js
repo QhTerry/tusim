@@ -43,10 +43,17 @@ export default function GuestClient({ event }) {
   }
 
   async function takePhoto() {
+    const video = videoRef.current
+    const maxSize = 1200
+
+    const scale = Math.min(maxSize / video.videoWidth, maxSize / video.videoHeight, 1)
+    const width = Math.round(video.videoWidth * scale)
+    const height = Math.round(video.videoHeight * scale)
+
     const canvas = document.createElement('canvas')
-    canvas.width = videoRef.current.videoWidth
-    canvas.height = videoRef.current.videoHeight
-    canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+    canvas.width = width
+    canvas.height = height
+    canvas.getContext('2d').drawImage(video, 0, 0, width, height)
     closeCamera()
     setUploading(true)
 
@@ -70,7 +77,7 @@ export default function GuestClient({ event }) {
       }
 
       setUploading(false)
-    }, 'image/jpeg', 0.8)
+    }, 'image/jpeg', 0.5)
   }
 
   const myPhotos = photos.filter(p => p.mine)
