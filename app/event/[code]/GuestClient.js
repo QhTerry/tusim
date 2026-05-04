@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 function getDeviceId() {
   let id = localStorage.getItem('tusim_device_id')
@@ -9,6 +9,98 @@ function getDeviceId() {
 }
 function getAuthor() { return localStorage.getItem('tusim_author') || '' }
 function saveAuthor(name) { localStorage.setItem('tusim_author', name) }
+
+// ── Звук затвора (Web Audio API — без файлов) ─────────────────────────────────
+function playShutter() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+
+    // Механический щелчок — два слоя
+    const now = ctx.currentTime
+
+    // Слой 1: острый кликающий звук
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.connect(gain1); gain1.connect(ctx.destination)
+    osc1.frequency.setValueAtTime(3200, now)
+    osc1.frequency.exponentialRampToValueAtTime(800, now + 0.04)
+    gain1.gain.setValueAtTime(0.18, now)
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.055)
+    osc1.start(now); osc1.stop(now + 0.06)
+
+    // Слой 2: короткий шум для "механики"
+    const bufSize = ctx.sampleRate * 0.04
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate)
+    const data = buf.getChannelData(0)
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 3)
+    const noise = ctx.createBufferSource()
+    const gainN = ctx.createGain()
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'bandpass'; filter.frequency.value = 2000; filter.Q.value = 0.8
+    noise.buffer = buf
+    noise.connect(filter); filter.connect(gainN); gainN.connect(ctx.destination)
+    gainN.gain.setValueAtTime(0.12, now)
+    gainN.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
+    noise.start(now); noise.stop(now + 0.04)
+
+    setTimeout(() => ctx.close(), 300)
+  } catch {}
+}
+
+// ── Конфетти ─────────────────────────────────────────────────────────────────
+function Confetti({ onDone }) {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    canvas.width  = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const colors = ['#C3073F', '#950740', '#F59E0B', '#22C55E', '#3B82F6', '#F0F0F0', '#6F2232']
+    const particles = Array.from({ length: 120 }, () => ({
+      x:    Math.random() * canvas.width,
+      y:    -10 - Math.random() * 40,
+      vx:   (Math.random() - 0.5) * 4,
+      vy:   2 + Math.random() * 4,
+      size: 5 + Math.random() * 8,
+      rot:  Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 8,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      alpha: 1,
+    }))
+
+    let frame, done = false
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      let alive = 0
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy
+        p.rot += p.rotV; p.vy += 0.08
+        if (p.y > canvas.height - 50) p.alpha -= 0.04
+        p.alpha = Math.max(0, p.alpha)
+        if (p.alpha > 0) alive++
+        ctx.save()
+        ctx.globalAlpha = p.alpha
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.rot * Math.PI / 180)
+        ctx.fillStyle = p.color
+        if (p.shape === 'rect') ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2)
+        else { ctx.beginPath(); ctx.arc(0, 0, p.size/2, 0, Math.PI*2); ctx.fill() }
+        ctx.restore()
+      })
+      if (alive > 0 && !done) frame = requestAnimationFrame(animate)
+      else onDone()
+    }
+    frame = requestAnimationFrame(animate)
+    const t = setTimeout(() => { done = true }, 3500)
+    return () => { cancelAnimationFrame(frame); clearTimeout(t) }
+  }, [])
+
+  return <canvas ref={canvasRef} style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:3000 }}/>
+}
 
 // ── Таймер ────────────────────────────────────────────────────────────────────
 function useTimer(event) {
@@ -20,10 +112,10 @@ function useTimer(event) {
   if (startsAt && now < startsAt)  return { phase:'before',  label:'До начала',       color:'#3B82F6', ms: startsAt-now }
   if (endsAt) {
     const ms = endsAt - now
-    if (ms <= 0)              return { phase:'closed',  label:'Завершено',       color:'#3a3a3a', ms:0 }
-    if (ms < 15*60*1000)     return { phase:'urgent',  label:'До конца',        color:'#C3073F', ms }
-    if (ms < 60*60*1000)     return { phase:'warning', label:'До конца',        color:'#F59E0B', ms }
-    return                          { phase:'active',  label:'До конца',        color:'#22C55E', ms }
+    if (ms <= 0)          return { phase:'closed',  label:'Завершено',  color:'#3a3a3a', ms:0 }
+    if (ms < 15*60*1000) return { phase:'urgent',  label:'До конца',   color:'#C3073F', ms }
+    if (ms < 60*60*1000) return { phase:'warning', label:'До конца',   color:'#F59E0B', ms }
+    return                       { phase:'active',  label:'До конца',   color:'#22C55E', ms }
   }
   return { phase:'active', label:'Идёт съёмка', color:'#22C55E', ms:0 }
 }
@@ -40,9 +132,9 @@ function TimerBar({ event }) {
   const bg = { before:'rgba(59,130,246,0.08)', active:'rgba(34,197,94,0.08)', warning:'rgba(245,158,11,0.08)', urgent:'rgba(195,7,63,0.08)', closed:'rgba(255,255,255,0.03)' }
   const br = { before:'rgba(59,130,246,0.2)', active:'rgba(34,197,94,0.2)', warning:'rgba(245,158,11,0.2)', urgent:'rgba(195,7,63,0.2)', closed:'rgba(255,255,255,0.06)' }
   return (
-    <div style={{ background:bg[t.phase], border:`1px solid ${br[t.phase]}`, borderRadius:'14px', padding:'11px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', animation: t.phase==='urgent' ? 'timerUrgent 1.5s ease infinite' : 'none' }}>
+    <div style={{ background:bg[t.phase], border:`1px solid ${br[t.phase]}`, borderRadius:'14px', padding:'11px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', animation: t.phase==='urgent'?'timerUrgent 1.5s ease infinite':'none' }}>
       <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-        <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:t.color, display:'inline-block', flexShrink:0, animation: t.phase!=='closed' ? 'pulse 1.5s infinite' : 'none' }}/>
+        <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:t.color, display:'inline-block', flexShrink:0, animation: t.phase!=='closed'?'pulse 1.5s infinite':'none' }}/>
         <span style={{ fontSize:'12px', color:t.color, fontWeight:600 }}>{t.label}</span>
       </div>
       {t.ms > 0 && <span style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'15px', color:t.color, letterSpacing:'0.05em' }}>{formatMs(t.ms)}</span>}
@@ -61,46 +153,24 @@ const ONBOARD = [
 function Onboarding({ limit, onFinish }) {
   const [step, setStep] = useState(0)
   const isLast = step === ONBOARD.length - 1
-
   return (
     <main style={{ minHeight:'100dvh', background:'#1A1A1D', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif", position:'relative', overflow:'hidden' }}>
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', background:'radial-gradient(ellipse 70% 50% at 50% 30%,rgba(195,7,63,0.1) 0%,transparent 70%)' }}/>
-
-      {/* Индикатор шагов */}
       <div style={{ display:'flex', gap:'6px', marginBottom:'40px', position:'relative', zIndex:1 }}>
-        {ONBOARD.map((_,i) => (
-          <div key={i} style={{ width: i===step ? '24px' : '6px', height:'6px', borderRadius:'3px', background: i===step ? '#C3073F' : '#2a2a2a', transition:'all 0.3s cubic-bezier(.22,1,.36,1)' }}/>
-        ))}
+        {ONBOARD.map((_,i) => <div key={i} style={{ width:i===step?'24px':'6px', height:'6px', borderRadius:'3px', background:i===step?'#C3073F':'#2a2a2a', transition:'all 0.3s cubic-bezier(.22,1,.36,1)' }}/>)}
       </div>
-
-      {/* Контент */}
       <div key={step} style={{ textAlign:'center', maxWidth:'320px', position:'relative', zIndex:1, animation:'fadeUp 0.4s cubic-bezier(.22,1,.36,1) both' }}>
-        <div style={{ width:'100px', height:'100px', borderRadius:'28px', background:'rgba(195,7,63,0.08)', border:'1px solid rgba(195,7,63,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'48px', margin:'0 auto 28px', boxShadow:'0 0 60px rgba(195,7,63,0.12)' }}>
-          {ONBOARD[step].emoji}
-        </div>
-        <h2 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'22px', color:'#F0F0F0', letterSpacing:'-0.5px', marginBottom:'14px', lineHeight:1.2 }}>
-          {ONBOARD[step].title}
-        </h2>
-        <p style={{ color:'#555', fontSize:'14px', lineHeight:1.75 }}>
-          {ONBOARD[step].text}
-        </p>
+        <div style={{ width:'100px', height:'100px', borderRadius:'28px', background:'rgba(195,7,63,0.08)', border:'1px solid rgba(195,7,63,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'48px', margin:'0 auto 28px', boxShadow:'0 0 60px rgba(195,7,63,0.12)' }}>{ONBOARD[step].emoji}</div>
+        <h2 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'22px', color:'#F0F0F0', letterSpacing:'-0.5px', marginBottom:'14px', lineHeight:1.2 }}>{ONBOARD[step].title}</h2>
+        <p style={{ color:'#555', fontSize:'14px', lineHeight:1.75 }}>{ONBOARD[step].text}</p>
       </div>
-
-      {/* Кнопки */}
       <div style={{ display:'flex', flexDirection:'column', gap:'10px', width:'100%', maxWidth:'320px', marginTop:'44px', position:'relative', zIndex:1 }}>
-        <button onClick={() => isLast ? onFinish() : setStep(s => s+1)} style={{ width:'100%', padding:'18px', background:'linear-gradient(135deg,#C3073F,#950740)', color:'#fff', border:'none', borderRadius:'100px', fontFamily:"'Onest',sans-serif", fontWeight:700, fontSize:'16px', cursor:'pointer', boxShadow:'0 4px 24px rgba(195,7,63,0.35)', WebkitTapHighlightColor:'transparent' }}>
+        <button onClick={() => isLast ? onFinish() : setStep(s=>s+1)} style={{ width:'100%', padding:'18px', background:'linear-gradient(135deg,#C3073F,#950740)', color:'#fff', border:'none', borderRadius:'100px', fontFamily:"'Onest',sans-serif", fontWeight:700, fontSize:'16px', cursor:'pointer', boxShadow:'0 4px 24px rgba(195,7,63,0.35)', WebkitTapHighlightColor:'transparent' }}>
           {isLast ? 'Поехали! 🎉' : 'Дальше →'}
         </button>
-        {!isLast && (
-          <button onClick={onFinish} style={{ background:'transparent', border:'none', color:'#2a2a2a', fontSize:'13px', cursor:'pointer', padding:'8px', fontFamily:"'Onest',sans-serif" }}>
-            Пропустить
-          </button>
-        )}
+        {!isLast && <button onClick={onFinish} style={{ background:'transparent', border:'none', color:'#2a2a2a', fontSize:'13px', cursor:'pointer', padding:'8px', fontFamily:"'Onest',sans-serif" }}>Пропустить</button>}
       </div>
-
-      <p style={{ color:'#1e1e1e', fontSize:'11px', marginTop:'20px', position:'relative', zIndex:1 }}>
-        У тебя {limit} кадров
-      </p>
+      <p style={{ color:'#1e1e1e', fontSize:'11px', marginTop:'20px', position:'relative', zIndex:1 }}>У тебя {limit} кадров</p>
     </main>
   )
 }
@@ -115,9 +185,19 @@ const STYLES = `
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
   @keyframes pulse  { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   @keyframes spin   { to{transform:rotate(360deg);} }
-  @keyframes flashWhite { 0%{opacity:0;} 10%{opacity:1;} 100%{opacity:0;} }
+  @keyframes flashWhite { 0%{opacity:0;} 8%{opacity:1;} 100%{opacity:0;} }
   @keyframes photoAppear { from{opacity:0;transform:scale(0.82) rotate(-2deg);} to{opacity:1;transform:scale(1);} }
   @keyframes timerUrgent { 0%,100%{opacity:1;} 50%{opacity:0.65;} }
+  @keyframes successPop {
+    0%   { opacity:0; transform:scale(0.5); }
+    60%  { opacity:1; transform:scale(1.15); }
+    100% { opacity:1; transform:scale(1); }
+  }
+  @keyframes successFade {
+    0%   { opacity:1; }
+    70%  { opacity:1; }
+    100% { opacity:0; }
+  }
 
   .fade-up { animation:fadeUp 0.5s cubic-bezier(.22,1,.36,1) both; }
   .fade-in { animation:fadeIn 0.4s ease both; }
@@ -125,17 +205,15 @@ const STYLES = `
   .name-input {
     width:100%; padding:18px 20px;
     background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-    border-radius:18px; color:#F0F0F0;
-    font-family:'Onest',sans-serif; font-size:18px;
-    outline:none; text-align:center;
-    transition:border-color 0.25s, background 0.25s; -webkit-appearance:none;
+    border-radius:18px; color:#F0F0F0; font-family:'Onest',sans-serif; font-size:18px;
+    outline:none; text-align:center; transition:border-color 0.25s, background 0.25s;
+    -webkit-appearance:none;
   }
   .name-input:focus { border-color:rgba(195,7,63,0.6); background:rgba(195,7,63,0.04); }
   .name-input::placeholder { color:#2a2a2a; }
 
   .confirm-btn {
-    width:100%; padding:18px;
-    background:linear-gradient(135deg,#C3073F,#950740);
+    width:100%; padding:18px; background:linear-gradient(135deg,#C3073F,#950740);
     color:#fff; border:none; border-radius:100px;
     font-family:'Onest',sans-serif; font-weight:700; font-size:17px;
     cursor:pointer; transition:transform 0.15s, box-shadow 0.15s;
@@ -146,13 +224,10 @@ const STYLES = `
   .confirm-btn:disabled { background:#1e1e1e; color:#444; cursor:not-allowed; }
 
   .shoot-btn {
-    background:linear-gradient(135deg,#C3073F,#6F2232);
-    color:#fff; border:none; border-radius:100px;
+    background:linear-gradient(135deg,#C3073F,#6F2232); color:#fff; border:none; border-radius:100px;
     font-family:'Onest',sans-serif; font-weight:700; font-size:17px;
-    cursor:pointer; padding:20px 52px;
-    transition:transform 0.15s, box-shadow 0.15s;
-    -webkit-tap-highlight-color:transparent;
-    box-shadow:0 4px 24px rgba(195,7,63,0.3);
+    cursor:pointer; padding:20px 52px; transition:transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color:transparent; box-shadow:0 4px 24px rgba(195,7,63,0.3);
   }
   .shoot-btn:hover:not(:disabled) { transform:scale(1.04); box-shadow:0 8px 32px rgba(195,7,63,0.45); }
   .shoot-btn:active:not(:disabled) { transform:scale(0.96); }
@@ -177,8 +252,13 @@ const STYLES = `
   .snap-btn::after { content:''; position:absolute; inset:6px; border-radius:50%; background:linear-gradient(135deg,#C3073F,#6F2232); }
   .snap-btn:active { transform:scale(0.88); }
 
-  .photo-wrap { position:relative; }
-  .photo-thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; display:block; animation:photoAppear 0.4s cubic-bezier(.22,1,.36,1) both; }
+  .photo-wrap { position:relative; cursor:pointer; }
+  .photo-thumb {
+    width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; display:block;
+    animation:photoAppear 0.4s cubic-bezier(.22,1,.36,1) both;
+    transition:transform 0.2s, opacity 0.2s;
+  }
+  .photo-wrap:hover .photo-thumb { transform:scale(1.03); }
   .delete-btn {
     position:absolute; top:5px; right:5px;
     width:26px; height:26px; border-radius:50%;
@@ -191,21 +271,33 @@ const STYLES = `
   @media (hover:none) { .delete-btn { opacity:1; } }
 
   .stat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 10px; text-align:center; }
+
+  /* Лайтбокс */
+  .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.97); z-index:1500; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.2s ease; }
+  .lb-img { max-width:100%; max-height:72dvh; object-fit:contain; border-radius:14px; box-shadow:0 24px 80px rgba(0,0,0,0.8); animation:successPop 0.25s cubic-bezier(.22,1,.36,1); }
+  .lb-close { position:absolute; top:max(18px,env(safe-area-inset-top,18px)); right:18px; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .lb-nav { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+  /* Анимация успеха после фото */
+  .success-overlay { position:fixed; inset:0; z-index:2500; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; animation:successFade 1.8s ease forwards; }
 `
 
-// ── Главный компонент ─────────────────────────────────────────────────────────
 export default function GuestClient({ event }) {
-  const [photos, setPhotos]           = useState([])
-  const [cameraOpen, setCameraOpen]   = useState(false)
-  const [deviceId, setDeviceId]       = useState('')
-  const [uploading, setUploading]     = useState(false)
-  const [author, setAuthor]           = useState('')
-  const [nameInput, setNameInput]     = useState('')
-  const [screen, setScreen]           = useState('loading') // 'loading'|'name'|'onboard'|'main'|'denied'|'closed_access'
+  const [photos, setPhotos]             = useState([])
+  const [cameraOpen, setCameraOpen]     = useState(false)
+  const [deviceId, setDeviceId]         = useState('')
+  const [uploading, setUploading]       = useState(false)
+  const [author, setAuthor]             = useState('')
+  const [nameInput, setNameInput]       = useState('')
+  const [screen, setScreen]             = useState('loading')
   const [accessDeniedReason, setAccessDeniedReason] = useState(null)
-  const [totalPhotos, setTotalPhotos] = useState(0)
-  const [guestCount, setGuestCount]   = useState(0)
-  const [deletingId, setDeletingId]   = useState(null)
+  const [totalPhotos, setTotalPhotos]   = useState(0)
+  const [guestCount, setGuestCount]     = useState(0)
+  const [deletingId, setDeletingId]     = useState(null)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [showSuccess, setShowSuccess]   = useState(false) // анимация успеха
+  const [lightboxPhoto, setLightboxPhoto] = useState(null)
+  const [lightboxIdx, setLightboxIdx]   = useState(0)
 
   const [facingMode, setFacingMode]         = useState('environment')
   const [flashOn, setFlashOn]               = useState(false)
@@ -271,8 +363,7 @@ export default function GuestClient({ event }) {
 
   function finishOnboarding() {
     localStorage.setItem('tusim_onboarded','1')
-    loadMyPhotos(deviceId)
-    setScreen('main')
+    loadMyPhotos(deviceId); setScreen('main')
   }
 
   const myPhotos  = photos.filter(p => p.mine)
@@ -280,13 +371,15 @@ export default function GuestClient({ event }) {
   const remaining = Math.max(0, limit - used)
   const progress  = Math.min((used / limit) * 100, 100)
 
-  // ── Камера ──────────────────────────────────────────────────────────────────
+  // ── Камера ───────────────────────────────────────────────────────────────────
   async function openCamera() { setCameraOpen(true); await startStream(facingMode) }
 
   async function startStream(mode) {
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:mode, width:{ideal:1920}, height:{ideal:1080} }, audio:false })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:mode, width:{ideal:1920}, height:{ideal:1080} }, audio:false,
+      })
       streamRef.current = stream
       const track = stream.getVideoTracks()[0]; trackRef.current = track
       setTorchSupported(!!(track.getCapabilities?.()?.torch))
@@ -319,7 +412,13 @@ export default function GuestClient({ event }) {
 
   async function takePhoto() {
     const video = videoRef.current; if (!video) return
-    setFlashActive(true); setTimeout(() => setFlashActive(false), 500)
+
+    // Звук затвора
+    playShutter()
+
+    // Вспышка-эффект
+    setFlashActive(true); setTimeout(() => setFlashActive(false), 400)
+
     const maxSize = 1200
     const scale = Math.min(maxSize/video.videoWidth, maxSize/video.videoHeight, 1)
     const w = Math.round(video.videoWidth*scale), h = Math.round(video.videoHeight*scale)
@@ -328,7 +427,9 @@ export default function GuestClient({ event }) {
     const ctx = canvas.getContext('2d')
     if (facingMode==='user') { ctx.translate(w,0); ctx.scale(-1,1) }
     ctx.drawImage(video, 0, 0, w, h)
+
     closeCamera(); setUploading(true)
+
     canvas.toBlob(async (blob) => {
       const form = new FormData()
       form.append('file', blob, 'photo.jpg')
@@ -337,8 +438,24 @@ export default function GuestClient({ event }) {
       form.append('author', author)
       const res = await fetch('/api/upload', { method:'POST', body:form })
       const { photo, error } = await res.json()
-      if (photo) { setPhotos(prev => [{ ...photo, mine:true }, ...prev]); setTotalPhotos(p=>p+1) }
-      else console.error(error)
+
+      if (photo) {
+        const newPhotos = [{ ...photo, mine:true }, ...photos.filter(p=>p.mine)]
+        setPhotos(prev => [{ ...photo, mine:true }, ...prev])
+        setTotalPhotos(p => p+1)
+
+        // Анимация успеха
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 1800)
+
+        // Конфетти на последний кадр
+        const newUsed = myPhotos.length + 1
+        if (newUsed >= limit) {
+          setTimeout(() => setShowConfetti(true), 400)
+        }
+      } else {
+        console.error(error)
+      }
       setUploading(false)
     }, 'image/jpeg', 0.82)
   }
@@ -354,6 +471,12 @@ export default function GuestClient({ event }) {
     setDeletingId(null)
   }
 
+  // Лайтбокс для своих фото
+  function openLightbox(photo, idx) { setLightboxPhoto(photo); setLightboxIdx(idx) }
+  function closeLightbox() { setLightboxPhoto(null) }
+  function lbPrev(e) { e.stopPropagation(); const i=(lightboxIdx-1+myPhotos.length)%myPhotos.length; setLightboxIdx(i); setLightboxPhoto(myPhotos[i]) }
+  function lbNext(e) { e.stopPropagation(); const i=(lightboxIdx+1)%myPhotos.length; setLightboxIdx(i); setLightboxPhoto(myPhotos[i]) }
+
   // ── Экраны ───────────────────────────────────────────────────────────────────
   if (screen === 'loading') return <><style>{STYLES}</style><div style={{ minHeight:'100dvh', background:'#1A1A1D' }}/></>
 
@@ -361,7 +484,7 @@ export default function GuestClient({ event }) {
     <>
       <style>{STYLES}</style>
       <main style={{ minHeight:'100dvh', background:'#1A1A1D', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', textAlign:'center', fontFamily:"'Onest',sans-serif" }}>
-        <div style={{ fontSize:'64px', marginBottom:'24px' }}>{accessDeniedReason==='closed' ? '🔒' : '🎟️'}</div>
+        <div style={{ fontSize:'64px', marginBottom:'24px' }}>{accessDeniedReason==='closed'?'🔒':'🎟️'}</div>
         <h1 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'22px', color:'#F0F0F0', letterSpacing:'-0.5px', marginBottom:'12px' }}>
           {accessDeniedReason==='closed' ? 'Съёмка закрыта' : 'Мест нет'}
         </h1>
@@ -378,7 +501,7 @@ export default function GuestClient({ event }) {
       <main style={{ minHeight:'100dvh', background:'#1A1A1D', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif" }}>
         <div style={{ position:'fixed', inset:0, pointerEvents:'none', background:'radial-gradient(ellipse 60% 40% at 50% 0%,rgba(195,7,63,0.1) 0%,transparent 70%)' }}/>
         <div className="fade-up" style={{ textAlign:'center', marginBottom:'44px' }}>
-          <div style={{ width:'88px', height:'88px', borderRadius:'50%', background:'rgba(195,7,63,0.08)', border:'1px solid rgba(195,7,63,0.18)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px', margin:'0 auto 24px', boxShadow:'0 0 40px rgba(195,7,63,0.12)' }}>👋</div>
+          <div style={{ width:'88px', height:'88px', borderRadius:'50%', background:'rgba(195,7,63,0.08)', border:'1px solid rgba(195,7,63,0.18)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px', margin:'0 auto 24px' }}>👋</div>
           <h1 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'26px', color:'#F0F0F0', letterSpacing:'-1px', marginBottom:'12px' }}>Привет!</h1>
           <p style={{ color:'#444', fontSize:'15px', lineHeight:1.7 }}>
             Ты на <span style={{ color:'#C3073F', fontWeight:600 }}>{event.name}</span><br/>Как тебя зовут?
@@ -397,22 +520,34 @@ export default function GuestClient({ event }) {
   )
 
   if (screen === 'onboard') return (
-    <>
-      <style>{STYLES}</style>
-      <Onboarding limit={limit} onFinish={finishOnboarding}/>
-    </>
+    <><style>{STYLES}</style><Onboarding limit={limit} onFinish={finishOnboarding}/></>
   )
 
-  // ── Главный экран ─────────────────────────────────────────────────────────────
   const isEventClosed = isClosed || accessDeniedReason === 'closed'
 
   return (
     <>
       <style>{STYLES}</style>
+
+      {/* Конфетти */}
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)}/>}
+
+      {/* Анимация успеха после съёмки */}
+      {showSuccess && (
+        <div className="success-overlay">
+          <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'rgba(34,197,94,0.15)', border:'2px solid rgba(34,197,94,0.4)', display:'flex', alignItems:'center', justifyContent:'center', animation:'successPop 0.3s cubic-bezier(.22,1,.36,1)' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      )}
+
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, background:'radial-gradient(ellipse 70% 40% at 50% -10%,rgba(195,7,63,0.08) 0%,transparent 60%)' }}/>
 
       <main style={{ minHeight:'100dvh', background:'#1A1A1D', color:'#F0F0F0', fontFamily:"'Onest',sans-serif", maxWidth:'480px', margin:'0 auto', padding:'0 20px 120px', position:'relative', zIndex:1 }}>
 
+        {/* Шапка */}
         <div className="fade-up" style={{ paddingTop:'48px', marginBottom:'24px', textAlign:'center' }}>
           <h1 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'28px', letterSpacing:'-1.5px', marginBottom:'6px' }}>
             tusi<span style={{ color:'#C3073F' }}>'m</span>
@@ -422,6 +557,7 @@ export default function GuestClient({ event }) {
 
         <div className="fade-up" style={{ animationDelay:'0.05s' }}><TimerBar event={event}/></div>
 
+        {/* Статистика */}
         <div className="fade-up" style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'14px', animationDelay:'0.08s' }}>
           {[
             { val:guestCount||'—', label:'гостей' },
@@ -435,6 +571,7 @@ export default function GuestClient({ event }) {
           ))}
         </div>
 
+        {/* Прогресс */}
         <div className="fade-up" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'14px', padding:'13px 18px', marginBottom:'18px', animationDelay:'0.1s' }}>
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'#444', marginBottom:'7px' }}>
             <span>Использовано: <span style={{ color:'#666' }}>{used}</span></span>
@@ -445,6 +582,7 @@ export default function GuestClient({ event }) {
           </div>
         </div>
 
+        {/* Кнопка съёмки */}
         <div className="fade-up" style={{ textAlign:'center', marginBottom:'28px', animationDelay:'0.12s' }}>
           {uploading && (
             <div style={{ marginBottom:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
@@ -465,19 +603,22 @@ export default function GuestClient({ event }) {
           )}
         </div>
 
+        {/* Мои фото с лайтбоксом */}
         {myPhotos.length > 0 && (
           <div className="fade-in" style={{ animationDelay:'0.15s' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
               <span style={{ fontSize:'13px', color:'#444' }}>Твои фото</span>
               <span style={{ fontSize:'11px', fontWeight:600, color:'#C3073F', background:'rgba(195,7,63,0.1)', padding:'3px 10px', borderRadius:'100px' }}>{myPhotos.length} шт</span>
             </div>
-            {!isEventClosed && <p style={{ fontSize:'11px', color:'#2a2a2a', marginBottom:'10px' }}>Нажми ✕ чтобы удалить и освободить слот</p>}
+            {!isEventClosed && <p style={{ fontSize:'11px', color:'#2a2a2a', marginBottom:'10px' }}>Нажми чтобы открыть · ✕ чтобы удалить</p>}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'6px' }}>
               {myPhotos.map((photo, i) => (
-                <div key={photo.id||i} className="photo-wrap" style={{ opacity:deletingId===photo.id?0.4:1, transition:'opacity 0.2s', animationDelay:`${i*0.04}s` }}>
+                <div key={photo.id||i} className="photo-wrap" style={{ opacity:deletingId===photo.id?0.4:1, transition:'opacity 0.2s', animationDelay:`${i*0.04}s` }}
+                  onClick={() => openLightbox(photo, i)}>
                   <img src={photo.url} loading="lazy" className="photo-thumb"/>
                   {!isEventClosed && (
-                    <button className="delete-btn" disabled={!!deletingId} onClick={() => { if(confirm('Удалить фото? Слот освободится.')) deletePhoto(photo.id) }}>✕</button>
+                    <button className="delete-btn" disabled={!!deletingId}
+                      onClick={e => { e.stopPropagation(); if(confirm('Удалить фото? Слот освободится.')) deletePhoto(photo.id) }}>✕</button>
                   )}
                 </div>
               ))}
@@ -493,9 +634,31 @@ export default function GuestClient({ event }) {
         )}
       </main>
 
+      {/* Лайтбокс своих фото */}
+      {lightboxPhoto && (
+        <div className="lightbox" onClick={closeLightbox}>
+          <button className="lb-close" onClick={closeLightbox}>✕</button>
+          {myPhotos.length > 1 && <>
+            <button className="lb-nav" style={{ left:'12px' }} onClick={lbPrev}>‹</button>
+            <button className="lb-nav" style={{ right:'12px' }} onClick={lbNext}>›</button>
+          </>}
+          <img key={lightboxPhoto.id} src={lightboxPhoto.url} className="lb-img" onClick={e=>e.stopPropagation()}/>
+          <div style={{ marginTop:'14px', textAlign:'center' }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontSize:'12px', color:'#333' }}>{lightboxIdx+1} из {myPhotos.length}</div>
+            {!isEventClosed && (
+              <button onClick={() => { if(confirm('Удалить?')) { deletePhoto(lightboxPhoto.id); closeLightbox() } }}
+                style={{ marginTop:'12px', background:'rgba(195,7,63,0.1)', border:'1px solid rgba(195,7,63,0.25)', color:'#C3073F', borderRadius:'8px', padding:'8px 18px', fontSize:'13px', cursor:'pointer', fontFamily:"'Onest',sans-serif" }}>
+                Удалить фото
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Камера */}
       {cameraOpen && (
         <div style={{ position:'fixed', inset:0, background:'#000', zIndex:2000, animation:'fadeIn 0.2s ease' }}>
-          {flashActive && <div style={{ position:'absolute', inset:0, background:'#fff', zIndex:10, pointerEvents:'none', animation:'flashWhite 0.5s ease forwards' }}/>}
+          {flashActive && <div style={{ position:'absolute', inset:0, background:'#fff', zIndex:10, pointerEvents:'none', animation:'flashWhite 0.4s ease forwards' }}/>}
           <video ref={videoRef} autoPlay playsInline muted style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transform:facingMode==='user'?'scaleX(-1)':'none' }}/>
           <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:5, paddingTop:'max(52px,env(safe-area-inset-top,52px))', paddingLeft:'24px', paddingRight:'24px', paddingBottom:'20px', background:'linear-gradient(to bottom,rgba(0,0,0,0.65),transparent)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <button className={`cam-btn ${flashOn?'active':''}`} onClick={toggleFlash} style={{ opacity:torchSupported?1:0.3 }}>⚡</button>
