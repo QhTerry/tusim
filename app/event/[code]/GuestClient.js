@@ -197,6 +197,7 @@ const STYLES = `
   @keyframes pulse  { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   @keyframes spin   { to{transform:rotate(360deg);} }
   @keyframes flashWhite { 0%{opacity:0;} 8%{opacity:1;} 100%{opacity:0;} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
   @keyframes photoAppear { from{opacity:0;transform:scale(0.82) rotate(-2deg);} to{opacity:1;transform:scale(1);} }
   @keyframes timerUrgent { 0%,100%{opacity:1;} 50%{opacity:0.65;} }
   @keyframes successPop {
@@ -309,6 +310,7 @@ export default function GuestClient({ event }) {
   const [showSuccess, setShowSuccess]   = useState(false) // анимация успеха
   const [lightboxPhoto, setLightboxPhoto] = useState(null)
   const [lightboxIdx, setLightboxIdx]   = useState(0)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // photoId to confirm
 
   const [facingMode, setFacingMode]         = useState('environment')
   const [flashOn, setFlashOn]               = useState(false)
@@ -486,11 +488,16 @@ export default function GuestClient({ event }) {
 
   async function deletePhoto(photoId) {
     if (deletingId) return
+    setDeleteConfirm(null)
     setDeletingId(photoId)
     try {
       const res = await fetch(`/api/delete-photo?photo_id=${photoId}&device_id=${deviceId}`, { method:'DELETE' })
       const data = await res.json()
-      if (data.ok) { setPhotos(prev => prev.filter(p=>p.id!==photoId)); setTotalPhotos(p=>Math.max(0,p-1)) }
+      if (data.ok) {
+        setPhotos(prev => prev.filter(p=>p.id!==photoId))
+        setTotalPhotos(p=>Math.max(0,p-1))
+        if (lightboxPhoto?.id === photoId) closeLightbox()
+      }
     } catch {}
     setDeletingId(null)
   }
@@ -576,7 +583,7 @@ export default function GuestClient({ event }) {
           <h1 style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'28px', letterSpacing:'-1.5px', marginBottom:'6px' }}>
             tusi<span style={{ color:'#C3073F' }}>'m</span>
           </h1>
-          <p style={{ color:'#444', fontSize:'13px' }}>{event.name}{author && <span style={{ color:'#555' }}> · {author}</span>}</p>
+          <p style={{ color:'#666', fontSize:'14px', fontWeight:500 }}>{event.name}{author && <span style={{ color:'#C3073F', fontWeight:600 }}> · {author}</span>}</p>
         </div>
 
         <div className="fade-up" style={{ animationDelay:'0.05s' }}><TimerBar event={event}/></div>
@@ -589,8 +596,8 @@ export default function GuestClient({ event }) {
             { val:remaining, label:'твоих кадров', warn:remaining<=5 },
           ].map(({ val, label, red, warn }) => (
             <div key={label} className="stat-card">
-              <div style={{ fontSize:'22px', fontFamily:"'Unbounded',sans-serif", fontWeight:900, lineHeight:1, color:warn||red?'#C3073F':'#F0F0F0' }}>{val}</div>
-              <div style={{ fontSize:'10px', color:'#444', marginTop:'5px', textTransform:'uppercase', letterSpacing:'0.05em' }}>{label}</div>
+              <div style={{ fontSize:'26px', fontFamily:"'Unbounded',sans-serif", fontWeight:900, lineHeight:1, color:warn||red?'#C3073F':'#F0F0F0' }}>{val}</div>
+              <div style={{ fontSize:'11px', color:'#555', marginTop:'6px', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -619,7 +626,7 @@ export default function GuestClient({ event }) {
               Съёмка завершена 🎉<br/><span style={{ fontSize:'12px', color:'#333' }}>Спасибо за участие!</span>
             </div>
           ) : remaining > 0 ? (
-            <button className="shoot-btn" onClick={openCamera} disabled={uploading}>📸 Сделать фото</button>
+            <button className="shoot-btn" onClick={openCamera} disabled={uploading} style={{ fontSize:'18px', padding:'22px 64px', letterSpacing:'-0.3px' }}>📸 Сделать фото</button>
           ) : (
             <div style={{ background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px', padding:'20px', color:'#444', fontSize:'14px', lineHeight:1.7 }}>
               Лимит исчерпан — спасибо за кадры! 🎉
@@ -631,10 +638,10 @@ export default function GuestClient({ event }) {
         {myPhotos.length > 0 && (
           <div className="fade-in" style={{ animationDelay:'0.15s' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
-              <span style={{ fontSize:'13px', color:'#444' }}>Твои фото</span>
+              <span style={{ fontSize:'14px', color:'#888', fontWeight:600 }}>Твои фото</span>
               <span style={{ fontSize:'11px', fontWeight:600, color:'#C3073F', background:'rgba(195,7,63,0.1)', padding:'3px 10px', borderRadius:'100px' }}>{myPhotos.length} шт</span>
             </div>
-            {!isEventClosed && <p style={{ fontSize:'11px', color:'#2a2a2a', marginBottom:'10px' }}>Нажми чтобы открыть · ✕ чтобы удалить</p>}
+            {!isEventClosed && <p style={{ fontSize:'12px', color:'#3a3a3a', marginBottom:'10px' }}>Нажми чтобы открыть · ✕ чтобы удалить</p>}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'6px' }}>
               {myPhotos.map((photo, i) => (
                 <div key={photo.id||i} className="photo-wrap" style={{ opacity:deletingId===photo.id?0.4:1, transition:'opacity 0.2s', animationDelay:`${i*0.04}s` }}
@@ -642,7 +649,7 @@ export default function GuestClient({ event }) {
                   <img src={photo.url} loading="lazy" className="photo-thumb"/>
                   {!isEventClosed && (
                     <button className="delete-btn" disabled={!!deletingId}
-                      onClick={e => { e.stopPropagation(); if(confirm('Удалить фото? Слот освободится.')) deletePhoto(photo.id) }}>✕</button>
+                      onClick={e => { e.stopPropagation(); setDeleteConfirm(photo.id) }}>✕</button>
                   )}
                 </div>
               ))}
@@ -670,11 +677,28 @@ export default function GuestClient({ event }) {
           <div style={{ marginTop:'14px', textAlign:'center' }} onClick={e=>e.stopPropagation()}>
             <div style={{ fontSize:'12px', color:'#333' }}>{lightboxIdx+1} из {myPhotos.length}</div>
             {!isEventClosed && (
-              <button onClick={() => { if(confirm('Удалить?')) { deletePhoto(lightboxPhoto.id); closeLightbox() } }}
+              <button onClick={() => setDeleteConfirm(lightboxPhoto.id)}
                 style={{ marginTop:'12px', background:'rgba(195,7,63,0.1)', border:'1px solid rgba(195,7,63,0.25)', color:'#C3073F', borderRadius:'8px', padding:'8px 18px', fontSize:'13px', cursor:'pointer', fontFamily:"'Onest',sans-serif" }}>
                 Удалить фото
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Диалог подтверждения удаления */}
+      {deleteConfirm && (
+        <div onClick={() => setDeleteConfirm(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:1800, display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'0 16px 32px', backdropFilter:'blur(8px)', animation:'fadeIn 0.2s ease' }}>
+          <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:'400px', background:'#1a1a1d', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'20px', overflow:'hidden', animation:'slideUp 0.25s cubic-bezier(.22,1,.36,1)' }}>
+            <div style={{ padding:'20px 20px 8px', textAlign:'center' }}>
+              <div style={{ fontSize:'36px', marginBottom:'8px' }}>🗑️</div>
+              <div style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'16px', color:'#F0F0F0', marginBottom:'6px' }}>Удалить фото?</div>
+              <div style={{ fontSize:'13px', color:'#555', lineHeight:1.6 }}>Слот освободится — сможешь снять ещё одно</div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0' }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{ padding:'16px', background:'transparent', border:'none', borderTop:'1px solid rgba(255,255,255,0.07)', color:'#666', fontSize:'15px', cursor:'pointer', fontFamily:"'Onest',sans-serif", fontWeight:600 }}>Отмена</button>
+              <button onClick={() => deletePhoto(deleteConfirm)} style={{ padding:'16px', background:'transparent', border:'none', borderTop:'1px solid rgba(255,255,255,0.07)', borderLeft:'1px solid rgba(255,255,255,0.07)', color:'#C3073F', fontSize:'15px', cursor:'pointer', fontFamily:"'Onest',sans-serif", fontWeight:700 }}>Удалить</button>
+            </div>
           </div>
         </div>
       )}
