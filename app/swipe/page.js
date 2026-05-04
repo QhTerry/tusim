@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -11,18 +11,17 @@ const supabase = createClient(
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: #1A1A1D; overflow: hidden; touch-action: none; }
+  html, body { height: 100%; background: #1A1A1D; overflow: hidden; }
 
   @keyframes fadeUp  { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn  { from{opacity:0;} to{opacity:1;} }
-  @keyframes pulse   { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   @keyframes spin    { to{transform:rotate(360deg);} }
-  @keyframes popIn   { 0%{opacity:0;transform:scale(0.4) rotate(-12deg);} 60%{opacity:1;transform:scale(1.12) rotate(3deg);} 100%{opacity:1;transform:scale(1) rotate(0);} }
+  @keyframes popIn   { 0%{opacity:0;transform:scale(0.4) rotate(-12deg);} 60%{opacity:1;transform:scale(1.12) rotate(3deg);} 100%{opacity:1;transform:scale(1);} }
   @keyframes cardIn  { from{opacity:0;transform:scale(0.93) translateY(14px);} to{opacity:1;transform:scale(1) translateY(0);} }
   @keyframes stampShow {
     0%   { opacity:0; transform:scale(0.5) rotate(var(--r0)); }
-    55%  { opacity:1; transform:scale(1.15) rotate(var(--r1)); }
-    100% { opacity:1; transform:scale(1) rotate(var(--r2)); }
+    55%  { opacity:1; transform:scale(1.2)  rotate(var(--r1)); }
+    100% { opacity:1; transform:scale(1)    rotate(var(--r2)); }
   }
   @keyframes hintSlide {
     0%   { opacity:0; transform:translateX(-50%) translateY(8px); }
@@ -42,22 +41,24 @@ const STYLES = `
   .show-like .stamp-like { animation:stampShow 0.35s cubic-bezier(.22,1,.36,1) forwards; }
   .show-skip .stamp-skip { animation:stampShow 0.35s cubic-bezier(.22,1,.36,1) forwards; }
 
-  .card-enter { animation:cardIn 0.35s cubic-bezier(.22,1,.36,1) both; }
+  .card-el { animation:cardIn 0.35s cubic-bezier(.22,1,.36,1) both; }
 
-  .overlay-right {
-    position:absolute; inset:0; pointer-events:none; border-radius:inherit;
-    background:linear-gradient(to left, rgba(29,185,84,0.6) 0%, transparent 60%);
+  /* Боковые оверлеи — gradient только от края */
+  .ov-right {
+    position:absolute; top:0; right:0; bottom:0; width:55%;
+    pointer-events:none; border-radius:inherit;
+    background:linear-gradient(to left, rgba(29,185,84,0.7) 0%, transparent 100%);
   }
-  .overlay-left {
-    position:absolute; inset:0; pointer-events:none; border-radius:inherit;
-    background:linear-gradient(to right, rgba(195,7,63,0.6) 0%, transparent 60%);
+  .ov-left {
+    position:absolute; top:0; left:0; bottom:0; width:55%;
+    pointer-events:none; border-radius:inherit;
+    background:linear-gradient(to right, rgba(195,7,63,0.7) 0%, transparent 100%);
   }
 
   .act-btn {
     border:none; border-radius:50%; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
     -webkit-tap-highlight-color:transparent;
-    transition:transform 0.15s, box-shadow 0.15s;
   }
   .act-btn:active { transform:scale(0.88) !important; }
 
@@ -70,11 +71,10 @@ const STYLES = `
     position:absolute; bottom:18px; left:50%;
     transform:translateX(-50%);
     display:flex; align-items:center; gap:14px;
-    background:rgba(10,10,12,0.7); backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,0.09); border-radius:100px;
+    background:rgba(10,10,12,0.75); backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.08); border-radius:100px;
     padding:9px 20px; pointer-events:none; z-index:20;
-    animation:hintSlide 4s 1.2s ease both;
-    white-space:nowrap;
+    animation:hintSlide 4s 1.2s ease both; white-space:nowrap;
   }
   .hint-pill span { font-family:'Onest',sans-serif; font-size:12px; font-weight:500; color:#777; }
   .hint-sep { width:1px; height:13px; background:rgba(255,255,255,0.1); flex-shrink:0; }
@@ -88,23 +88,11 @@ export default function SwipePage() {
   const [swipeDir, setSwipeDir]     = useState(null)
   const [likedCount, setLikedCount] = useState(0)
   const [liked, setLiked]           = useState({})
+  const [dragState, setDragState]   = useState({ x: 0, dragging: false })
 
-  // Drag state — храним в refs чтобы не было stale closures в touch handlers
-  const dragXRef      = useRef(0)
-  const isDraggingRef = useRef(false)
-  const touchStartX   = useRef(null)
-  const touchStartY   = useRef(null)
-  const animating     = useRef(false)
-
-  // cardRef как ref callback — гарантирует что listeners вешаются сразу при mount
-  const cardNodeRef   = useRef(null)
-
-  // Для рендера drag — отдельный state обновляем через rAF
-  const [dragX, setDragX] = useState(0)
-
-  // Refs на актуальные handleLike/handleSkip (избегаем stale closure в touch handlers)
-  const likeRef = useRef(null)
-  const skipRef = useRef(null)
+  const animating   = useRef(false)
+  const touchStart  = useRef(null)
+  const cardId      = useRef(`card-${Date.now()}`) // уникальный id для DOM
 
   useEffect(() => {
     const params  = new URLSearchParams(window.location.search)
@@ -113,6 +101,62 @@ export default function SwipePage() {
     if (eventId) loadPhotos(eventId)
     else setLoading(false)
   }, [])
+
+  // Вешаем touch listeners напрямую на DOM-элемент по id
+  useEffect(() => {
+    const card = document.getElementById(cardId.current)
+    if (!card || done || loading) return
+
+    let startX = null, startY = null, dragging = false
+
+    function onStart(e) {
+      if (animating.current) return
+      const touch = e.touches ? e.touches[0] : e
+      startX = touch.clientX
+      startY = touch.clientY
+      dragging = true
+    }
+
+    function onMove(e) {
+      if (!dragging || startX === null) return
+      const touch = e.touches ? e.touches[0] : e
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      if (e.touches && Math.abs(dy) > Math.abs(dx)) return // вертикальный скролл — не трогаем
+      if (e.cancelable) e.preventDefault()
+      setDragState({ x: dx, dragging: true })
+    }
+
+    function onEnd(e) {
+      if (!dragging) return
+      dragging = false
+      const touch = e.changedTouches ? e.changedTouches[0] : e
+      const dx = touch.clientX - startX
+      setDragState({ x: 0, dragging: false })
+      if (Math.abs(dx) > 60) {
+        dx > 0 ? doLike() : doSkip()
+      }
+      startX = null
+    }
+
+    card.addEventListener('touchstart', onStart, { passive: true })
+    card.addEventListener('touchmove',  onMove,  { passive: false })
+    card.addEventListener('touchend',   onEnd,   { passive: true })
+    card.addEventListener('mousedown',  onStart)
+    card.addEventListener('mousemove',  (e) => { if (dragging) onMove(e) })
+    card.addEventListener('mouseup',    onEnd)
+    card.addEventListener('mouseleave', onEnd)
+
+    return () => {
+      card.removeEventListener('touchstart', onStart)
+      card.removeEventListener('touchmove',  onMove)
+      card.removeEventListener('touchend',   onEnd)
+      card.removeEventListener('mousedown',  onStart)
+      card.removeEventListener('mousemove',  onMove)
+      card.removeEventListener('mouseup',    onEnd)
+      card.removeEventListener('mouseleave', onEnd)
+    }
+  }, [index, done, loading, liked]) // перевешиваем при смене карточки
 
   async function loadPhotos(eventId) {
     const { data } = await supabase
@@ -123,163 +167,76 @@ export default function SwipePage() {
     setLoading(false)
   }
 
-  const current      = photos[index]
-  const next         = photos[index + 1]
-  const progress     = photos.length ? (index / photos.length) * 100 : 0
-  const dragProgress = Math.min(Math.abs(dragX) / 100, 1)
-  const isDragRight  = dragX > 12
-  const isDragLeft   = dragX < -12
-  const stampClass   = isDragRight ? 'show-like' : isDragLeft ? 'show-skip' : ''
+  const current  = photos[index]
+  const next     = photos[index + 1]
+  const progress = photos.length ? (index / photos.length) * 100 : 0
+  const dx       = dragState.x
+  const absDx    = Math.abs(dx)
+  const dragProg = Math.min(absDx / 100, 1)
+  const goRight  = dx > 12
+  const goLeft   = dx < -12
 
-  function saveLiked(nl) { localStorage.setItem('tusim_liked', JSON.stringify(nl)); setLiked(nl) }
-
-  function handleLike() {
+  function doLike() {
     if (!current || animating.current) return
     animating.current = true
-    // Сбрасываем drag
-    dragXRef.current = 0; setDragX(0)
+    setDragState({ x: 0, dragging: false })
     setSwipeDir('right')
-
     if (!liked[current.id]) {
       const nl = { ...liked, [current.id]: true }
-      saveLiked(nl)
+      localStorage.setItem('tusim_liked', JSON.stringify(nl))
+      setLiked(nl)
       setLikedCount(p => p + 1)
       supabase.from('photos').update({ votes: (current.votes || 0) + 1 }).eq('id', current.id)
     }
-
     setTimeout(() => {
       setSwipeDir(null)
+      cardId.current = `card-${Date.now()}`
       if (index + 1 >= photos.length) setDone(true)
       else setIndex(p => p + 1)
       animating.current = false
     }, 380)
   }
 
-  function handleSkip() {
+  function doSkip() {
     if (!current || animating.current) return
     animating.current = true
-    dragXRef.current = 0; setDragX(0)
+    setDragState({ x: 0, dragging: false })
     setSwipeDir('left')
-
     setTimeout(() => {
       setSwipeDir(null)
+      cardId.current = `card-${Date.now()}`
       if (index + 1 >= photos.length) setDone(true)
       else setIndex(p => p + 1)
       animating.current = false
     }, 380)
-  }
-
-  // Обновляем refs каждый рендер
-  likeRef.current = handleLike
-  skipRef.current = handleSkip
-
-  // ref callback — вешаем/снимаем listeners при каждом mount/unmount карточки
-  const cardRef = useCallback((node) => {
-    // Снимаем с предыдущего
-    if (cardNodeRef.current) {
-      cardNodeRef.current.removeEventListener('touchstart', onTouchStart)
-      cardNodeRef.current.removeEventListener('touchmove',  onTouchMove)
-      cardNodeRef.current.removeEventListener('touchend',   onTouchEnd)
-    }
-    cardNodeRef.current = node
-    if (!node) return
-
-    node.addEventListener('touchstart', onTouchStart, { passive: true })
-    node.addEventListener('touchmove',  onTouchMove,  { passive: false }) // false чтобы preventDefault работал
-    node.addEventListener('touchend',   onTouchEnd,   { passive: true })
-  }, [index, done]) // пересоздаём при смене карточки
-
-  function onTouchStart(e) {
-    if (animating.current) return
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    isDraggingRef.current = true
-  }
-
-  function onTouchMove(e) {
-    if (!isDraggingRef.current || touchStartX.current === null) return
-    const dx = e.touches[0].clientX - touchStartX.current
-    const dy = e.touches[0].clientY - touchStartY.current
-
-    // Только горизонтальный свайп
-    if (Math.abs(dx) > Math.abs(dy)) {
-      e.preventDefault()
-      dragXRef.current = dx
-      setDragX(dx) // триггерим ре-рендер для трансформации
-    }
-  }
-
-  function onTouchEnd(e) {
-    isDraggingRef.current = false
-    if (touchStartX.current === null) return
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    const dy = e.changedTouches[0].clientY - touchStartY.current
-
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 55) {
-      dx > 0 ? likeRef.current() : skipRef.current()
-    } else {
-      dragXRef.current = 0
-      setDragX(0)
-    }
-    touchStartX.current = null
-  }
-
-  // Mouse handlers
-  function onMouseDown(e) {
-    if (animating.current) return
-    touchStartX.current = e.clientX
-    isDraggingRef.current = true
-  }
-  function onMouseMove(e) {
-    if (!isDraggingRef.current || touchStartX.current === null) return
-    const dx = e.clientX - touchStartX.current
-    dragXRef.current = dx
-    setDragX(dx)
-  }
-  function onMouseUp(e) {
-    isDraggingRef.current = false
-    if (touchStartX.current === null) return
-    const dx = e.clientX - touchStartX.current
-    if (Math.abs(dx) > 55) dx > 0 ? handleLike() : handleSkip()
-    else { dragXRef.current = 0; setDragX(0) }
-    touchStartX.current = null
   }
 
   function getCardTransform() {
     if (swipeDir === 'right') return 'translateX(145%) rotate(26deg)'
     if (swipeDir === 'left')  return 'translateX(-145%) rotate(-26deg)'
-    if (dragX !== 0) {
-      // Наклон нелинейный — резкий в начале, плавеет к максимуму
-      const absDx = Math.abs(dragX)
-      const rot   = Math.sign(dragX) * Math.min(absDx * 0.12, 22)
-      const liftY = -absDx * 0.04
-      return `translateX(${dragX}px) translateY(${liftY}px) rotate(${rot}deg)`
+    if (dx !== 0) {
+      const rot = Math.sign(dx) * Math.min(absDx * 0.13, 22)
+      const liftY = -absDx * 0.035
+      return `translateX(${dx}px) translateY(${liftY}px) rotate(${rot}deg)`
     }
-    return 'translateX(0) rotate(0)'
-  }
-
-  function getNextTransform() {
-    const scale  = 0.92 + dragProgress * 0.08
-    const transY = 14  - dragProgress * 14
-    return `scale(${scale}) translateY(${transY}px)`
+    return 'none'
   }
 
   function reset() {
     setIndex(0); setDone(false); setLikedCount(0)
-    dragXRef.current = 0; setDragX(0)
+    setDragState({ x: 0, dragging: false })
   }
 
-  const isCurrentDragging = isDraggingRef.current
+  const stampClass = goRight ? 'show-like' : goLeft ? 'show-skip' : ''
 
   return (
     <>
       <style>{STYLES}</style>
-
       <main style={{
         height: '100dvh', background: '#1A1A1D',
         display: 'flex', flexDirection: 'column',
         fontFamily: "'Onest',sans-serif", color: '#F0F0F0',
-        userSelect: 'none', overflow: 'hidden', touchAction: 'none',
+        userSelect: 'none', overflow: 'hidden',
       }}>
 
         {/* Шапка */}
@@ -302,14 +259,14 @@ export default function SwipePage() {
 
         {/* Прогресс */}
         {photos.length > 0 && !done && (
-          <div style={{ padding:'12px 24px 0', flexShrink:0, animation:'fadeIn 0.5s 0.1s ease both' }}>
+          <div style={{ padding:'12px 24px 0', flexShrink:0 }}>
             <div style={{ background:'#1a1a1a', borderRadius:'100px', height:'3px', overflow:'hidden' }}>
-              <div style={{ height:'100%', borderRadius:'100px', background:'linear-gradient(90deg,#6F2232,#C3073F)', width:`${progress}%`, transition:'width 0.4s cubic-bezier(.22,1,.36,1)' }}/>
+              <div style={{ height:'100%', borderRadius:'100px', background:'linear-gradient(90deg,#6F2232,#C3073F)', width:`${progress}%`, transition:'width 0.4s ease' }}/>
             </div>
           </div>
         )}
 
-        {/* Зона карточек */}
+        {/* Карточки */}
         <div style={{ flex:1, position:'relative', padding:'14px 18px 0', overflow:'hidden', minHeight:0 }}>
 
           {loading && (
@@ -320,11 +277,9 @@ export default function SwipePage() {
           )}
 
           {!loading && photos.length === 0 && (
-            <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'12px', animation:'fadeUp 0.5s ease both' }}>
+            <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'12px' }}>
               <div style={{ fontSize:'52px' }}>📸</div>
-              <p style={{ color:'#2a2a2a', fontSize:'14px', textAlign:'center', lineHeight:1.6 }}>
-                Пока нет фото<br/><span style={{ fontSize:'12px' }}>Сначала сделай снимки</span>
-              </p>
+              <p style={{ color:'#2a2a2a', fontSize:'14px', textAlign:'center', lineHeight:1.6 }}>Пока нет фото</p>
             </div>
           )}
 
@@ -347,61 +302,50 @@ export default function SwipePage() {
             <div style={{
               position:'absolute', inset:'14px 18px 0',
               borderRadius:'22px', overflow:'hidden', zIndex:1,
-              transform: getNextTransform(),
-              transition: dragX !== 0 ? 'none' : 'transform 0.3s ease',
+              transform: `scale(${0.92 + dragProg * 0.08}) translateY(${14 - dragProg * 14}px)`,
+              transition: dx !== 0 ? 'none' : 'transform 0.3s ease',
             }}>
               <img src={next.url} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
-              <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.2)' }}/>
+              <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.22)' }}/>
             </div>
           )}
 
           {/* Текущая карточка */}
           {!loading && !done && current && (
             <div
-              ref={cardRef}
-              key={`card-${index}`}
-              className={`card-enter ${stampClass}`}
+              id={cardId.current}
+              className={`card-el ${stampClass}`}
               style={{
                 position:'absolute', inset:'14px 18px 0',
                 borderRadius:'22px', overflow:'hidden', zIndex:2,
-                cursor: isDraggingRef.current ? 'grabbing' : 'grab',
+                cursor: dragState.dragging ? 'grabbing' : 'grab',
                 transform: getCardTransform(),
                 transition: swipeDir
                   ? 'transform 0.38s cubic-bezier(.22,1,.36,1), opacity 0.38s ease'
-                  : dragX !== 0 ? 'none' : 'transform 0.18s cubic-bezier(.22,1,.36,1)',
+                  : dx !== 0 ? 'none' : 'transform 0.18s ease',
                 opacity: swipeDir ? 0 : 1,
-                boxShadow: isDragRight
-                  ? `0 20px 60px rgba(29,185,84,${dragProgress * 0.45}), 0 4px 20px rgba(0,0,0,0.4)`
-                  : isDragLeft
-                  ? `0 20px 60px rgba(195,7,63,${dragProgress * 0.45}), 0 4px 20px rgba(0,0,0,0.4)`
+                boxShadow: goRight
+                  ? `0 20px 60px rgba(29,185,84,${dragProg * 0.4}), 0 4px 20px rgba(0,0,0,0.4)`
+                  : goLeft
+                  ? `0 20px 60px rgba(195,7,63,${dragProg * 0.4}), 0 4px 20px rgba(0,0,0,0.4)`
                   : '0 8px 32px rgba(0,0,0,0.4)',
                 willChange: 'transform',
               }}
-              onMouseDown={onMouseDown}
-              onMouseMove={onMouseMove}
-              onMouseUp={onMouseUp}
-              onMouseLeave={onMouseUp}
             >
-              <img src={current.url} style={{ width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none', display:'block' }} draggable={false}/>
+              <img src={current.url} style={{ width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none', display:'block', userSelect:'none' }} draggable={false}/>
 
-              {/* Боковые оверлеи — только со стороны свайпа */}
-              {isDragRight && <div className="overlay-right" style={{ opacity: Math.min(dragProgress * 1.2, 1) }}/>}
-              {isDragLeft  && <div className="overlay-left"  style={{ opacity: Math.min(dragProgress * 1.2, 1) }}/>}
+              {/* Боковые оверлеи — только с нужной стороны */}
+              {goRight && <div className="ov-right" style={{ opacity: Math.min(dragProg * 1.3, 0.9) }}/>}
+              {goLeft  && <div className="ov-left"  style={{ opacity: Math.min(dragProg * 1.3, 0.9) }}/>}
 
-              {/* Штампы */}
               <div className="stamp stamp-like">ОГОНЬ 🔥</div>
               <div className="stamp stamp-skip">ДАЛЬШЕ</div>
 
-              {/* Инфо об авторе */}
               <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'linear-gradient(transparent,rgba(0,0,0,0.85))', padding:'48px 18px 20px', pointerEvents:'none' }}>
-                <div style={{ fontWeight:700, fontSize:'15px', color:'#fff', fontFamily:"'Onest',sans-serif" }}>
-                  {current.author || 'Гость'}
-                </div>
+                <div style={{ fontWeight:700, fontSize:'15px', color:'#fff' }}>{current.author || 'Гость'}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'4px' }}>
                   <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>{current.votes||0} лайков</span>
-                  {liked[current.id] && (
-                    <span style={{ fontSize:'10px', color:'#C3073F', background:'rgba(195,7,63,0.25)', padding:'1px 8px', borderRadius:'100px' }}>уже лайкнул</span>
-                  )}
+                  {liked[current.id] && <span style={{ fontSize:'10px', color:'#C3073F', background:'rgba(195,7,63,0.25)', padding:'1px 8px', borderRadius:'100px' }}>уже лайкнул</span>}
                 </div>
               </div>
             </div>
@@ -419,32 +363,31 @@ export default function SwipePage() {
           )}
         </div>
 
-        {/* Кнопки действий */}
+        {/* Кнопки — только две */}
         {!loading && !done && current && (
           <div style={{
-            padding:'14px 32px', paddingBottom:'max(20px,env(safe-area-inset-bottom,20px))',
-            display:'flex', alignItems:'center', justifyContent:'center', gap:'24px',
+            padding:'16px 32px', paddingBottom:'max(24px,env(safe-area-inset-bottom,24px))',
+            display:'flex', alignItems:'center', justifyContent:'center', gap:'32px',
             flexShrink:0, animation:'fadeUp 0.4s 0.15s ease both',
           }}>
-            <button className="act-btn" onClick={handleSkip}
-              style={{ width:'58px', height:'58px', background:'#161616', border:'1px solid #222', fontSize:'24px', boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
-              👎
-            </button>
+            {/* Пропустить */}
+            <button className="act-btn" onClick={doSkip} style={{
+              width:'62px', height:'62px', background:'#161616',
+              border:'1px solid #2a2a2a', fontSize:'22px', color:'#555',
+              boxShadow:'0 4px 16px rgba(0,0,0,0.4)',
+              transform: goLeft ? `scale(${1 + dragProg * 0.15})` : 'scale(1)',
+              transition:'transform 0.08s, box-shadow 0.2s',
+            }}>→</button>
 
-            <button className="act-btn" onClick={handleLike}
-              style={{
-                width:'74px', height:'74px', fontSize:'28px', border:'none',
-                background: liked[current?.id] ? 'linear-gradient(135deg,#6F2232,#950740)' : 'linear-gradient(135deg,#C3073F,#6F2232)',
-                boxShadow: liked[current?.id] ? '0 4px 20px rgba(195,7,63,0.25)' : '0 4px 28px rgba(195,7,63,0.5)',
-                transform: isDragRight ? `scale(${1 + dragProgress * 0.2})` : 'scale(1)',
-                transition: 'background 0.2s, box-shadow 0.2s, transform 0.08s',
-              }}>
+            {/* Лайк */}
+            <button className="act-btn" onClick={doLike} style={{
+              width:'80px', height:'80px', fontSize:'32px', border:'none',
+              background: liked[current?.id] ? 'linear-gradient(135deg,#6F2232,#950740)' : 'linear-gradient(135deg,#C3073F,#6F2232)',
+              boxShadow: liked[current?.id] ? '0 4px 20px rgba(195,7,63,0.2)' : '0 6px 32px rgba(195,7,63,0.55)',
+              transform: goRight ? `scale(${1 + dragProg * 0.22})` : 'scale(1)',
+              transition:'transform 0.08s, box-shadow 0.2s, background 0.2s',
+            }}>
               {liked[current?.id] ? '✓' : '❤️'}
-            </button>
-
-            <button className="act-btn" onClick={handleSkip}
-              style={{ width:'58px', height:'58px', background:'#161616', border:'1px solid #222', fontSize:'20px', color:'#444', boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
-              →
             </button>
           </div>
         )}

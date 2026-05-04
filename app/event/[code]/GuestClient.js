@@ -14,36 +14,47 @@ function saveAuthor(name) { localStorage.setItem('tusim_author', name) }
 function playShutter() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
-
-    // Механический щелчок — два слоя
     const now = ctx.currentTime
+    const sr  = ctx.sampleRate
 
-    // Слой 1: острый кликающий звук
-    const osc1 = ctx.createOscillator()
-    const gain1 = ctx.createGain()
-    osc1.connect(gain1); gain1.connect(ctx.destination)
-    osc1.frequency.setValueAtTime(3200, now)
-    osc1.frequency.exponentialRampToValueAtTime(800, now + 0.04)
-    gain1.gain.setValueAtTime(0.18, now)
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.055)
-    osc1.start(now); osc1.stop(now + 0.06)
+    function makeNoise(duration, freq, q, gainVal, attackT, decayT, startT) {
+      const buf  = ctx.createBuffer(1, Math.floor(sr * duration), sr)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+      const src    = ctx.createBufferSource()
+      const flt    = ctx.createBiquadFilter()
+      const gain   = ctx.createGain()
+      flt.type     = 'bandpass'
+      flt.frequency.value = freq
+      flt.Q.value  = q
+      src.buffer   = buf
+      src.connect(flt); flt.connect(gain); gain.connect(ctx.destination)
+      gain.gain.setValueAtTime(0, startT)
+      gain.gain.linearRampToValueAtTime(gainVal, startT + attackT)
+      gain.gain.exponentialRampToValueAtTime(0.0001, startT + attackT + decayT)
+      src.start(startT); src.stop(startT + duration)
+    }
 
-    // Слой 2: короткий шум для "механики"
-    const bufSize = ctx.sampleRate * 0.04
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate)
-    const data = buf.getChannelData(0)
-    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 3)
-    const noise = ctx.createBufferSource()
-    const gainN = ctx.createGain()
-    const filter = ctx.createBiquadFilter()
-    filter.type = 'bandpass'; filter.frequency.value = 2000; filter.Q.value = 0.8
-    noise.buffer = buf
-    noise.connect(filter); filter.connect(gainN); gainN.connect(ctx.destination)
-    gainN.gain.setValueAtTime(0.12, now)
-    gainN.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
-    noise.start(now); noise.stop(now + 0.04)
+    // ── Звук открытия затвора (первый щелчок) ──
+    // Широкополосный удар
+    makeNoise(0.06, 4000, 0.5, 0.35, 0.001, 0.04, now)
+    // Средние частоты — тело звука
+    makeNoise(0.08, 1200, 1.2, 0.25, 0.001, 0.06, now)
+    // Низкий удар
+    makeNoise(0.05, 300,  2.0, 0.20, 0.001, 0.04, now)
 
-    setTimeout(() => ctx.close(), 300)
+    // ── Небольшая пауза — зеркало ──
+    const gap = 0.045
+
+    // ── Звук закрытия затвора (второй щелчок, тише) ──
+    makeNoise(0.05, 3500, 0.6, 0.22, 0.001, 0.035, now + gap)
+    makeNoise(0.06, 1000, 1.5, 0.18, 0.001, 0.045, now + gap)
+    makeNoise(0.04, 250,  2.5, 0.15, 0.001, 0.03,  now + gap)
+
+    // ── Тихий механический хвост ──
+    makeNoise(0.12, 800, 0.8, 0.06, 0.002, 0.1, now + gap + 0.03)
+
+    setTimeout(() => ctx.close(), 400)
   } catch {}
 }
 
@@ -308,8 +319,21 @@ export default function GuestClient({ event }) {
   const streamRef = useRef(null)
   const trackRef  = useRef(null)
 
-  const isClosed = event.status === 'closed'
+  const [eventStatus, setEventStatus] = useState(event.status)
+  const isClosed = eventStatus === 'closed'
   const limit    = event.photo_limit || 30
+
+  // Realtime — следим за закрытием события из админки
+  useEffect(() => {
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+      const ch = sb.channel('ev-' + event.id)
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'events', filter:'id=eq.' + event.id },
+          (p) => { if (p.new?.status) setEventStatus(p.new.status) })
+        .subscribe()
+      return () => sb.removeChannel(ch)
+    })
+  }, [event.id])
 
   useEffect(() => {
     const id = getDeviceId()
