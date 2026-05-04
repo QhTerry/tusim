@@ -121,8 +121,8 @@ function BottomNavWrapper() {
             }
 
             // Скрываем навигацию на /admin
-            // СТАЛО:
-              if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/') { {
+
+              if (window.location.pathname.startsWith('/admin') || window.location.pathname === '/') {
               var nav = document.querySelector('.bottom-nav');
               if (nav) nav.style.display = 'none';
               document.body.style.paddingBottom = '0';
