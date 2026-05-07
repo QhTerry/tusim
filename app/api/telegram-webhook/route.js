@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -8,61 +9,103 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    const body = await req.json()
-    const message = body?.message
-    if (!message) return NextResponse.json({ ok: true })
+    const data = await req.json()
 
-    const chatId = message.chat?.id?.toString()
-    const text = message.text || ''
-
-    // Когда пользователь пишет /start или любой текст —
-    // сохраняем chat_id привязанный к номеру если есть pending OTP
-    if (text.startsWith('/start')) {
-      await sendMessage(chatId,
-        '👋 Привет! Я бот сервиса *tusi\'m*.\n\n' +
-        'Введи свой номер телефона на сайте и я пришлю тебе код для входа в кабинет организатора.'
-      )
-      return NextResponse.json({ ok: true })
+    // Верифицируем подпись от Telegram
+    if (!verifyTelegramAuth(data)) {
+      return NextResponse.json({ error: 'Недействительные данные' }, { status: 401 })
     }
 
-    // Если пользователь прислал номер телефона через кнопку
-    const contact = message?.contact
-    if (contact?.phone_number) {
-      const phone = normalizePhone(contact.phone_number)
-      await linkChatToPhone(phone, chatId)
-      await sendMessage(chatId, '✅ Номер привязан! Теперь иди на сайт и запроси код.')
-      return NextResponse.json({ ok: true })
+    // Проверяем что данные свежие (не старше 24 часов)
+    const authDate = parseInt(data.auth_date)
+    if (Date.now() / 1000 - authDate > 86400) {
+      return NextResponse.json({ error: 'Данные устарели' }, { status: 401 })
     }
 
-    return NextResponse.json({ ok: true })
+    const telegramId = data.id.toString()
+
+    // Находим или создаём организатора
+    let { data: organizer } = await supabase
+      .from('organizers')
+      .select('*')
+      .eq('telegram_id', telegramId)
+      .single()
+
+    if (!organizer) {
+      const { data: newOrg, error } = await supabase
+        .from('organizers')
+        .insert({
+          telegram_id: telegramId,
+          telegram_username: data.username || null,
+          telegram_first_name: data.first_name || null,
+          telegram_last_name: data.last_name || null,
+          telegram_photo_url: data.photo_url || null,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      organizer = newOrg
+    } else {
+      // Обновляем данные профиля
+      await supabase
+        .from('organizers')
+        .update({
+          telegram_username: data.username || null,
+          telegram_first_name: data.first_name || null,
+          telegram_last_name: data.last_name || null,
+          telegram_photo_url: data.photo_url || null,
+        })
+        .eq('telegram_id', telegramId)
+    }
+
+    // Создаём токен сессии
+    const sessionToken = Buffer.from(
+      JSON.stringify({
+        id: organizer.id,
+        telegram_id: telegramId,
+        first_name: data.first_name,
+        ts: Date.now()
+      })
+    ).toString('base64')
+
+    return NextResponse.json({
+      ok: true,
+      token: sessionToken,
+      organizer: {
+        id: organizer.id,
+        first_name: data.first_name,
+        last_name: data.last_name || '',
+        username: data.username || '',
+        photo_url: data.photo_url || '',
+      }
+    })
   } catch (e) {
-    console.error('Webhook error:', e)
-    return NextResponse.json({ ok: true })
+    console.error('Telegram auth error:', e)
+    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 })
   }
 }
 
-async function linkChatToPhone(phone, chatId) {
-  await supabase
-    .from('otp_codes')
-    .update({ telegram_chat_id: chatId })
-    .eq('phone', phone)
-    .eq('used', false)
-    .gte('expires_at', new Date().toISOString())
-}
+function verifyTelegramAuth(data) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const { hash, ...rest } = data
 
-async function sendMessage(chatId, text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'Markdown'
-    })
-  })
-}
+  // Строка для проверки: отсортированные поля key=value через \n
+  const checkString = Object.keys(rest)
+    .sort()
+    .map(k => `${k}=${rest[k]}`)
+    .join('\n')
 
-function normalizePhone(phone) {
-  return phone.replace(/\D/g, '').replace(/^8/, '7')
+  // Секретный ключ = SHA256 от токена бота
+  const secretKey = crypto
+    .createHash('sha256')
+    .update(botToken)
+    .digest()
+
+  const expectedHash = crypto
+    .createHmac('sha256', secretKey)
+    .update(checkString)
+    .digest('hex')
+
+  return expectedHash === hash
 }
