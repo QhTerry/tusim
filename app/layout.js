@@ -10,11 +10,14 @@ export default function RootLayout({ children }) {
     <html lang="ru">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#1A1A1D" />
+        <meta name="theme-color" content="#09090b" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body style={{ margin:0, padding:0, background:'#1A1A1D', overflowX:'hidden' }}>
+      <body style={{ margin:0, padding:0, background:'#09090b', overflowX:'hidden' }}>
         {children}
         <BottomNavWrapper />
       </body>
@@ -26,11 +29,9 @@ function BottomNavWrapper() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&display=swap');
-
         .bottom-nav {
           position: fixed; bottom: 0; left: 0; right: 0;
-          background: rgba(14,14,16,0.94);
+          background: rgba(9,9,11,0.94);
           backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
           border-top: 1px solid rgba(255,255,255,0.05);
           display: flex; align-items: center; justify-content: space-around;
@@ -45,10 +46,10 @@ function BottomNavWrapper() {
           text-decoration: none; padding: 8px 20px; border-radius: 14px;
           transition: background 0.15s, opacity 0.15s;
           cursor: pointer; border: none; background: transparent;
-          font-family: 'Onest', sans-serif; -webkit-tap-highlight-color: transparent; opacity: 0.9;
+          font-family: 'Onest', sans-serif;
+          -webkit-tap-highlight-color: transparent; opacity: 0.9;
         }
         .nav-item:active { background: rgba(255,255,255,0.04); opacity: 0.7; }
-
         .nav-label { font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: #3a3a3a; }
 
         .nav-center-wrap { display: flex; align-items: center; justify-content: center; padding: 4px; }
@@ -57,7 +58,8 @@ function BottomNavWrapper() {
           background: linear-gradient(135deg, #C3073F, #6F2232);
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 0 0 4px rgba(195,7,63,0.12), 0 4px 16px rgba(195,7,63,0.3);
-          transition: transform 0.15s, box-shadow 0.15s; -webkit-tap-highlight-color: transparent;
+          transition: transform 0.15s, box-shadow 0.15s;
+          -webkit-tap-highlight-color: transparent;
         }
         .nav-center:active {
           transform: scale(0.91);
@@ -115,13 +117,11 @@ function BottomNavWrapper() {
             if (!nav) return;
             nav.style.display = shouldShow(path) ? 'flex' : 'none';
 
-            // Обновляем ссылки с event_id из URL
             var params = new URLSearchParams(window.location.search);
             var eventId = params.get('event_id');
             if (eventId) {
               var swipeLink = document.getElementById('nav-swipe-link');
               var albumLink = document.getElementById('nav-album-link');
-              var cameraLink = document.getElementById('nav-camera-link');
               if (swipeLink) swipeLink.href = '/swipe?event_id=' + eventId;
               if (albumLink) albumLink.href = '/album?event_id=' + eventId;
             }

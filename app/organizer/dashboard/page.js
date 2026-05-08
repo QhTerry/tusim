@@ -27,7 +27,6 @@ export default function Dashboard() {
   const [organizer, setOrganizer] = useState(null)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tick, setTick] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -36,22 +35,15 @@ export default function Dashboard() {
     const org = JSON.parse(localStorage.getItem('organizer') || '{}')
     setOrganizer(org)
     loadEvents(org.id)
-    const t = setInterval(() => setTick(v => v + 1), 30000)
+    const t = setInterval(() => loadEvents(org.id), 60000)
     return () => clearInterval(t)
   }, [])
 
   async function loadEvents(organizerId) {
     setLoading(true)
     try {
-      let query = supabase
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (organizerId) {
-        query = query.eq('organizer_id', organizerId)
-      }
-
+      let query = supabase.from('events').select('*').order('created_at', { ascending: false })
+      if (organizerId) query = query.eq('organizer_id', organizerId)
       const { data, error } = await query
       if (!error && data) setEvents(data)
     } catch(e) {}
@@ -68,232 +60,306 @@ export default function Dashboard() {
 
   const totalGuests = events.reduce((a, e) => a + (e.guest_count || 0), 0)
   const totalPhotos = events.reduce((a, e) => a + (e.photo_count || 0), 0)
+  const activeCount = events.filter(e => e.status === 'active').length
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Onest:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .db-root {
           min-height: 100vh; min-height: 100dvh;
-          background: #0c0c0e; font-family: 'Onest', sans-serif;
-          color: #F0F0F0;
+          background: #09090b; font-family: 'Onest', sans-serif;
+          color: #F0F0F0; position: relative; overflow-x: hidden;
         }
 
+        /* Блобы */
+        .db-blob {
+          position: fixed; border-radius: 50%;
+          filter: blur(120px); pointer-events: none; z-index: 0;
+        }
+        .db-blob-1 {
+          width: 700px; height: 700px;
+          background: rgba(195,7,63,0.07);
+          top: -300px; left: -200px;
+          animation: blobDrift 24s ease-in-out infinite alternate;
+        }
+        .db-blob-2 {
+          width: 500px; height: 500px;
+          background: rgba(195,7,63,0.04);
+          bottom: -200px; right: -150px;
+          animation: blobDrift 30s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes blobDrift {
+          from { transform: translate(0,0) scale(1); }
+          to   { transform: translate(60px,80px) scale(1.15); }
+        }
+
+        /* Хедер */
         .db-header {
           position: sticky; top: 0; z-index: 100;
-          background: rgba(12,12,14,0.92);
-          backdrop-filter: blur(20px);
-          border-bottom: 0.5px solid rgba(255,255,255,0.05);
-          padding: 0 24px; height: 60px;
+          background: rgba(9,9,11,0.85);
+          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          padding: 0 28px; height: 62px;
           display: flex; align-items: center; justify-content: space-between;
         }
         .db-logo {
-          font-family: 'Syne', sans-serif; font-weight: 800;
-          font-size: 20px; color: #fff; letter-spacing: -1px;
+          font-family: 'Unbounded', sans-serif; font-weight: 900;
+          font-size: 20px; color: #fff; letter-spacing: -1.5px;
           text-decoration: none;
         }
-        .db-logo em { font-style: normal; color: #C3073F; }
+        .db-logo span { color: #C3073F; }
 
         .db-header-right { display: flex; align-items: center; gap: 12px; }
         .db-avatar {
-          width: 34px; height: 34px; border-radius: 50%;
+          width: 36px; height: 36px; border-radius: 50%;
           background: linear-gradient(135deg, #C3073F, #6F2232);
           display: flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 600; cursor: pointer;
+          font-size: 13px; font-weight: 700; cursor: pointer;
           border: none; color: #fff; position: relative;
-          overflow: visible;
+          box-shadow: 0 0 0 2px rgba(195,7,63,0.2);
+          transition: box-shadow 0.2s;
         }
+        .db-avatar:hover { box-shadow: 0 0 0 3px rgba(195,7,63,0.4); }
+
         .db-menu {
-          position: absolute; top: calc(100% + 8px); right: 0;
-          background: #161618; border: 0.5px solid rgba(255,255,255,0.08);
-          border-radius: 14px; padding: 6px; min-width: 160px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-          animation: fadeUp 0.15s ease both;
+          position: absolute; top: calc(100% + 10px); right: 0;
+          background: #111113; border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 16px; padding: 6px; min-width: 180px;
+          box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+          animation: menuIn 0.15s ease both;
+        }
+        @keyframes menuIn {
+          from { opacity: 0; transform: translateY(6px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         .db-menu-item {
           display: block; width: 100%; padding: 10px 14px;
-          background: none; border: none; color: #888;
+          background: none; border: none; color: rgba(255,255,255,0.5);
           font-size: 13px; font-family: 'Onest', sans-serif;
-          cursor: pointer; border-radius: 8px; text-align: left;
+          cursor: pointer; border-radius: 10px; text-align: left;
           transition: background 0.15s, color 0.15s;
         }
-        .db-menu-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+        .db-menu-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .db-menu-item.danger:hover { background: rgba(195,7,63,0.08); color: #C3073F; }
+        .db-menu-sep { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0; }
 
-        .db-body { max-width: 900px; margin: 0 auto; padding: 32px 20px 100px; }
+        /* Контент */
+        .db-body {
+          max-width: 920px; margin: 0 auto;
+          padding: 40px 24px 120px;
+          position: relative; z-index: 1;
+        }
 
+        /* Приветствие */
         .db-welcome {
-          margin-bottom: 32px;
           display: flex; align-items: flex-end; justify-content: space-between;
-          gap: 16px; flex-wrap: wrap;
+          gap: 16px; flex-wrap: wrap; margin-bottom: 36px;
+          animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
         }
-        .db-welcome h1 {
-          font-family: 'Syne', sans-serif; font-size: clamp(22px, 5vw, 32px);
-          font-weight: 800; letter-spacing: -1px; color: #fff;
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .db-welcome h1 span { color: #C3073F; }
-        .db-welcome p { font-size: 13px; color: #444; margin-top: 4px; }
+        .db-welcome-title {
+          font-family: 'Unbounded', sans-serif;
+          font-size: clamp(22px, 4vw, 32px);
+          font-weight: 900; letter-spacing: -1.5px; color: #fff; line-height: 1.1;
+        }
+        .db-welcome-title span { color: #C3073F; }
+        .db-welcome-sub { font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 6px; }
 
         .db-create-btn {
           display: flex; align-items: center; gap: 8px;
-          padding: 12px 20px; background: #C3073F; border: none;
-          border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600;
-          font-family: 'Onest', sans-serif; cursor: pointer;
-          white-space: nowrap; flex-shrink: 0;
-          transition: background 0.2s, transform 0.1s;
+          padding: 13px 22px; background: #C3073F; border: none;
+          border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700;
+          font-family: 'Onest', sans-serif; cursor: pointer; white-space: nowrap;
+          box-shadow: 0 4px 24px rgba(195,7,63,0.4);
+          transition: transform 0.15s, box-shadow 0.15s;
+          flex-shrink: 0;
         }
-        .db-create-btn:hover { background: #a8063a; }
+        .db-create-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 36px rgba(195,7,63,0.55); }
         .db-create-btn:active { transform: scale(0.97); }
 
+        /* Статы */
         .db-stats {
           display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 12px; margin-bottom: 32px;
+          gap: 12px; margin-bottom: 40px;
+          animation: fadeUp 0.5s 0.05s cubic-bezier(.22,1,.36,1) both;
         }
-        @media(max-width: 500px) { .db-stats { grid-template-columns: 1fr 1fr; } }
-        .db-stat {
-          background: #111114; border: 0.5px solid rgba(255,255,255,0.05);
-          border-radius: 16px; padding: 20px;
-        }
-        .db-stat-val {
-          font-family: 'Syne', sans-serif; font-size: 28px;
-          font-weight: 800; color: #fff; letter-spacing: -1px;
-          display: block; margin-bottom: 4px;
-        }
-        .db-stat-label { font-size: 11px; color: #444; text-transform: uppercase; letter-spacing: 1px; }
+        @media(max-width: 480px) { .db-stats { grid-template-columns: 1fr 1fr; } }
 
+        .db-stat {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 18px; padding: 22px 20px;
+          position: relative; overflow: hidden;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .db-stat:hover {
+          border-color: rgba(195,7,63,0.2);
+          background: rgba(195,7,63,0.02);
+        }
+        .db-stat::before {
+          content: ''; position: absolute;
+          top: 0; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(195,7,63,0.3), transparent);
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .db-stat:hover::before { opacity: 1; }
+        .db-stat-val {
+          font-family: 'Unbounded', sans-serif; font-size: 30px;
+          font-weight: 900; color: #fff; letter-spacing: -1.5px;
+          display: block; margin-bottom: 6px; line-height: 1;
+        }
+        .db-stat-label {
+          font-size: 11px; color: rgba(255,255,255,0.3);
+          text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+        }
+
+        /* Секция событий */
         .db-section-head {
           display: flex; align-items: center; justify-content: space-between;
           margin-bottom: 16px;
+          animation: fadeUp 0.5s 0.1s cubic-bezier(.22,1,.36,1) both;
         }
         .db-section-title {
-          font-family: 'Syne', sans-serif; font-size: 16px;
-          font-weight: 700; color: #fff;
+          font-family: 'Unbounded', sans-serif; font-size: 14px;
+          font-weight: 900; color: #fff; letter-spacing: -0.5px;
         }
         .db-section-count {
-          font-size: 12px; color: #444; padding: 4px 10px;
-          background: rgba(255,255,255,0.03);
-          border: 0.5px solid rgba(255,255,255,0.06);
-          border-radius: 20px;
+          font-size: 11px; color: rgba(255,255,255,0.3); padding: 4px 12px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 20px; font-weight: 600;
         }
 
-        .db-events { display: flex; flex-direction: column; gap: 12px; }
+        /* Карточки событий */
+        .db-events {
+          display: flex; flex-direction: column; gap: 12px;
+          animation: fadeUp 0.5s 0.12s cubic-bezier(.22,1,.36,1) both;
+        }
 
         .db-event {
-          background: #111114; border: 0.5px solid rgba(255,255,255,0.05);
-          border-radius: 20px; padding: 20px 22px;
-          transition: border-color 0.2s, background 0.2s;
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 20px; padding: 22px 24px;
+          transition: border-color 0.2s, background 0.2s, transform 0.2s;
           position: relative; overflow: hidden;
         }
         .db-event:hover {
           border-color: rgba(195,7,63,0.2);
-          background: #131316;
+          background: rgba(195,7,63,0.02);
+          transform: translateY(-2px);
         }
         .db-event.active-event::before {
           content: '';
           position: absolute; top: 0; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg, #C3073F, #6F2232);
+          background: linear-gradient(90deg, #C3073F, #6F2232, transparent);
         }
 
         .db-event-top {
           display: flex; align-items: flex-start;
-          justify-content: space-between; gap: 12px; margin-bottom: 16px;
+          justify-content: space-between; gap: 12px; margin-bottom: 18px;
         }
         .db-event-name {
-          font-family: 'Syne', sans-serif; font-size: 17px;
-          font-weight: 700; color: #fff; letter-spacing: -0.3px;
+          font-family: 'Unbounded', sans-serif; font-size: 15px;
+          font-weight: 900; color: #fff; letter-spacing: -0.5px; line-height: 1.3;
         }
-        .db-event-date { font-size: 12px; color: #444; margin-top: 4px; }
+        .db-event-date { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 5px; }
 
+        .db-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
         .db-badge {
           padding: 4px 10px; border-radius: 20px;
-          font-size: 11px; font-weight: 500; white-space: nowrap;
+          font-size: 10px; font-weight: 700; white-space: nowrap;
+          letter-spacing: 0.3px;
         }
-        .db-badge.active { background: rgba(34,197,94,0.1); color: #22c55e; }
-        .db-badge.closed { background: rgba(255,255,255,0.04); color: #555; }
-        .db-badge.plan { background: rgba(195,7,63,0.1); color: #C3073F; }
+        .db-badge.active { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .db-badge.closed { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.07); }
+        .db-badge.plan { background: rgba(195,7,63,0.1); color: #C3073F; border: 1px solid rgba(195,7,63,0.2); }
 
-        .db-event-meta { display: flex; gap: 20px; flex-wrap: wrap; }
-        .db-meta-item { display: flex; flex-direction: column; gap: 2px; }
-        .db-meta-val { font-size: 16px; font-weight: 600; color: #F0F0F0; }
-        .db-meta-label { font-size: 11px; color: #444; }
+        .db-event-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+        .db-meta-item { display: flex; flex-direction: column; gap: 3px; }
+        .db-meta-val { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 900; color: #F0F0F0; letter-spacing: -0.5px; }
+        .db-meta-sub { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .db-event-bar {
-          margin-top: 14px; height: 3px; border-radius: 2px;
+          margin-top: 16px; height: 3px; border-radius: 2px;
           background: rgba(255,255,255,0.05); overflow: hidden;
         }
         .db-event-bar-fill {
           height: 100%; border-radius: 2px;
-          background: linear-gradient(90deg, #C3073F, #6F2232);
-          transition: width 0.5s ease;
+          background: linear-gradient(90deg, #6F2232, #C3073F);
+          transition: width 0.6s cubic-bezier(.22,1,.36,1);
         }
 
         .db-event-footer {
-          margin-top: 14px; display: flex;
+          margin-top: 16px; display: flex;
           align-items: center; justify-content: space-between;
           flex-wrap: wrap; gap: 8px;
         }
-        .db-event-timer { font-size: 12px; color: #C3073F; font-weight: 500; }
+        .db-event-timer { font-size: 12px; color: #C3073F; font-weight: 700; }
         .db-event-code {
-          font-size: 11px; color: #333; font-family: monospace;
-          background: rgba(255,255,255,0.03); padding: 4px 10px;
-          border-radius: 6px; letter-spacing: 1px;
+          font-size: 11px; color: rgba(255,255,255,0.2);
+          font-family: monospace; background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;
         }
 
-        .db-event-actions {
-          display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
-        }
+        .db-event-actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
         .db-action-btn {
-          padding: 8px 14px; border-radius: 10px; border: none;
-          font-size: 12px; font-weight: 500; font-family: 'Onest', sans-serif;
-          cursor: pointer; transition: all 0.15s;
+          padding: 9px 16px; border-radius: 10px; border: none;
+          font-size: 12px; font-weight: 700; font-family: 'Onest', sans-serif;
+          cursor: pointer; transition: all 0.15s; letter-spacing: 0.2px;
         }
-        .db-action-btn.primary { background: #C3073F; color: #fff; }
-        .db-action-btn.primary:hover { background: #a8063a; }
+        .db-action-btn.primary {
+          background: #C3073F; color: #fff;
+          box-shadow: 0 2px 12px rgba(195,7,63,0.3);
+        }
+        .db-action-btn.primary:hover { background: #a8063a; box-shadow: 0 4px 20px rgba(195,7,63,0.45); }
         .db-action-btn.secondary {
           background: rgba(255,255,255,0.04);
-          border: 0.5px solid rgba(255,255,255,0.08);
-          color: #888;
+          border: 1px solid rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.5);
         }
-        .db-action-btn.secondary:hover { color: #fff; background: rgba(255,255,255,0.07); }
+        .db-action-btn.secondary:hover { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); }
 
+        /* Пустое состояние */
         .db-empty {
-          text-align: center; padding: 60px 24px;
-          background: #111114; border: 0.5px dashed rgba(255,255,255,0.07);
-          border-radius: 20px;
+          text-align: center; padding: 64px 24px;
+          background: rgba(255,255,255,0.02);
+          border: 1px dashed rgba(255,255,255,0.07);
+          border-radius: 24px;
+          animation: fadeUp 0.5s 0.12s cubic-bezier(.22,1,.36,1) both;
         }
-        .db-empty-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+        .db-empty-icon { font-size: 48px; margin-bottom: 20px; display: block; }
         .db-empty h3 {
-          font-family: 'Syne', sans-serif; font-size: 18px;
-          font-weight: 700; color: #fff; margin-bottom: 8px;
+          font-family: 'Unbounded', sans-serif; font-size: 18px;
+          font-weight: 900; color: #fff; margin-bottom: 10px; letter-spacing: -0.5px;
         }
-        .db-empty p { font-size: 13px; color: #444; margin-bottom: 24px; line-height: 1.6; }
+        .db-empty p { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 28px; line-height: 1.7; }
 
-        .db-loading {
-          display: flex; flex-direction: column; gap: 12px;
-        }
+        /* Скелетон */
+        .db-loading { display: flex; flex-direction: column; gap: 12px; }
         .db-skeleton {
-          background: #111114; border: 0.5px solid rgba(255,255,255,0.04);
-          border-radius: 20px; height: 160px;
-          background: linear-gradient(90deg, #111114 25%, #161619 50%, #111114 75%);
+          border-radius: 20px; height: 180px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 75%);
           background-size: 200% 100%;
-          animation: shimmer 1.4s infinite;
+          animation: shimmer 1.5s infinite;
         }
         @keyframes shimmer {
-          0% { background-position: 200% 0; }
+          0%   { background-position: 200% 0; }
           100% { background-position: -200% 0; }
-        }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
+      <div className="db-blob db-blob-1"/>
+      <div className="db-blob db-blob-2"/>
+
       <div className="db-root">
         <header className="db-header">
-          <a href="/" className="db-logo">tusi<em>'m</em></a>
+          <a href="/" className="db-logo">tusi<span>'m</span></a>
           <div className="db-header-right">
             <div style={{ position: 'relative' }}>
               <button className="db-avatar" onClick={() => setMenuOpen(v => !v)}>
@@ -301,10 +367,10 @@ export default function Dashboard() {
               </button>
               {menuOpen && (
                 <div className="db-menu">
-                  <button className="db-menu-item" style={{ color: '#F0F0F0', cursor: 'default' }}>
+                  <button className="db-menu-item" style={{ color: '#F0F0F0', cursor: 'default', fontWeight: 600 }}>
                     {organizer.name || organizer.first_name || 'Организатор'}
                   </button>
-                  <hr style={{ border: 'none', borderTop: '0.5px solid rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                  <div className="db-menu-sep"/>
                   <button className="db-menu-item danger" onClick={logout}>Выйти</button>
                 </div>
               )}
@@ -315,8 +381,10 @@ export default function Dashboard() {
         <div className="db-body">
           <div className="db-welcome">
             <div>
-              <h1>Привет, <span>{organizer.name || organizer.first_name || 'Организатор'}</span> 👋</h1>
-              <p>Управляй событиями и следи за фото в реальном времени</p>
+              <div className="db-welcome-title">
+                Привет, <span>{organizer.name || organizer.first_name || 'Организатор'}</span> 👋
+              </div>
+              <div className="db-welcome-sub">Управляй событиями и следи за фото в реальном времени</div>
             </div>
             <button className="db-create-btn" onClick={() => router.push('/organizer/create')}>
               + Новое событие
@@ -324,18 +392,16 @@ export default function Dashboard() {
           </div>
 
           <div className="db-stats">
-            <div className="db-stat">
-              <span className="db-stat-val">{events.length}</span>
-              <span className="db-stat-label">Событий</span>
-            </div>
-            <div className="db-stat">
-              <span className="db-stat-val">{totalGuests}</span>
-              <span className="db-stat-label">Гостей</span>
-            </div>
-            <div className="db-stat">
-              <span className="db-stat-val">{totalPhotos}</span>
-              <span className="db-stat-label">Фото</span>
-            </div>
+            {[
+              { val: events.length, label: 'Событий' },
+              { val: activeCount, label: 'Активных' },
+              { val: totalPhotos, label: 'Фото' },
+            ].map((s, i) => (
+              <div key={s.label} className="db-stat" style={{ animationDelay: `${i * 0.04}s` }}>
+                <span className="db-stat-val">{s.val}</span>
+                <span className="db-stat-label">{s.label}</span>
+              </div>
+            ))}
           </div>
 
           <div className="db-section-head">
@@ -345,34 +411,39 @@ export default function Dashboard() {
 
           {loading ? (
             <div className="db-loading">
-              <div className="db-skeleton" />
-              <div className="db-skeleton" style={{ height: 120, opacity: 0.5 }} />
+              <div className="db-skeleton"/>
+              <div className="db-skeleton" style={{ height: 140, opacity: 0.5 }}/>
             </div>
           ) : events.length === 0 ? (
             <div className="db-empty">
               <span className="db-empty-icon">📸</span>
               <h3>Нет событий</h3>
               <p>Создай первое событие и получи QR-код<br/>для своих гостей</p>
-              <button className="db-create-btn" style={{ display:'inline-flex', margin: '0 auto' }} onClick={() => router.push('/organizer/create')}>
+              <button className="db-create-btn" style={{ display: 'inline-flex', margin: '0 auto' }}
+                onClick={() => router.push('/organizer/create')}>
                 Создать событие
               </button>
             </div>
           ) : (
             <div className="db-events">
-              {events.map(ev => {
+              {events.map((ev, idx) => {
                 const guestCount = ev.guest_count || 0
                 const photoCount = ev.photo_count || 0
                 const pct = ev.guest_limit ? Math.min(100, Math.round(guestCount / ev.guest_limit * 100)) : 0
                 const tl = timeLeft(ev.ends_at)
                 const isActive = ev.status === 'active'
                 return (
-                  <div key={ev.id} className={`db-event${isActive ? ' active-event' : ''}`}>
+                  <div
+                    key={ev.id}
+                    className={`db-event${isActive ? ' active-event' : ''}`}
+                    style={{ animationDelay: `${idx * 0.04}s` }}
+                  >
                     <div className="db-event-top">
                       <div>
                         <div className="db-event-name">{ev.name}</div>
                         <div className="db-event-date">{formatDate(ev.starts_at)}</div>
                       </div>
-                      <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'flex-end' }}>
+                      <div className="db-badges">
                         <span className={`db-badge ${ev.status}`}>
                           {isActive ? '● Активно' : 'Завершено'}
                         </span>
@@ -384,23 +455,23 @@ export default function Dashboard() {
                       <div className="db-meta-item">
                         <span className="db-meta-val">
                           {guestCount}
-                          {ev.guest_limit && <span style={{fontSize:12,color:'#444',fontWeight:400}}>/{ev.guest_limit}</span>}
+                          {ev.guest_limit && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>/{ev.guest_limit}</span>}
                         </span>
-                        <span className="db-meta-label">Гостей</span>
+                        <span className="db-meta-sub">Гостей</span>
                       </div>
                       <div className="db-meta-item">
                         <span className="db-meta-val">{photoCount}</span>
-                        <span className="db-meta-label">Фото</span>
+                        <span className="db-meta-sub">Фото</span>
                       </div>
                       <div className="db-meta-item">
                         <span className="db-meta-val">{Math.round(photoCount / Math.max(guestCount, 1))}</span>
-                        <span className="db-meta-label">Фото/гость</span>
+                        <span className="db-meta-sub">Фото/гость</span>
                       </div>
                     </div>
 
                     {ev.guest_limit && (
                       <div className="db-event-bar">
-                        <div className="db-event-bar-fill" style={{ width: `${pct}%` }} />
+                        <div className="db-event-bar-fill" style={{ width: `${pct}%` }}/>
                       </div>
                     )}
 
@@ -410,10 +481,12 @@ export default function Dashboard() {
                     </div>
 
                     <div className="db-event-actions">
-                      <button className="db-action-btn primary" onClick={() => router.push(`/organizer/event/${ev.id}`)}>
+                      <button className="db-action-btn primary"
+                        onClick={() => router.push(`/organizer/event/${ev.id}`)}>
                         Управление →
                       </button>
-                      <button className="db-action-btn secondary" onClick={() => router.push(`/album?event_id=${ev.id}`)}>
+                      <button className="db-action-btn secondary"
+                        onClick={() => router.push(`/album?event_id=${ev.id}`)}>
                         Альбом
                       </button>
                       <button className="db-action-btn secondary">

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 
 export default function OrganizerLogin() {
   const router = useRouter()
-  const [tab, setTab] = useState('phone') // 'phone' | 'tg'
+  const [tab, setTab] = useState('phone')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -52,187 +52,177 @@ export default function OrganizerLogin() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Onest:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .ol-root {
           min-height: 100vh; min-height: 100dvh;
-          background: #0c0c0e;
+          background: #09090b;
           display: flex; font-family: 'Onest', sans-serif;
-          position: relative; overflow: hidden;
+          color: #F0F0F0; position: relative; overflow: hidden;
         }
 
-        /* Левая панель — декоративная */
+        /* Блобы */
+        .ol-blob {
+          position: fixed; border-radius: 50%;
+          filter: blur(100px); pointer-events: none; z-index: 0;
+        }
+        .ol-blob-1 {
+          width: 600px; height: 600px;
+          background: rgba(195,7,63,0.1);
+          top: -200px; left: -200px;
+          animation: blobDrift 20s ease-in-out infinite alternate;
+        }
+        .ol-blob-2 {
+          width: 400px; height: 400px;
+          background: rgba(195,7,63,0.06);
+          bottom: -100px; right: -100px;
+          animation: blobDrift 26s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes blobDrift {
+          from { transform: translate(0,0) scale(1); }
+          to   { transform: translate(50px,60px) scale(1.12); }
+        }
+
+        /* Левая панель */
         .ol-left {
           display: none;
-          width: 45%; background: #111114;
-          border-right: 0.5px solid rgba(255,255,255,0.04);
-          position: relative; overflow: hidden;
+          width: 46%; position: relative; overflow: hidden;
           flex-direction: column; justify-content: space-between;
-          padding: 48px;
+          padding: 52px;
+          border-right: 1px solid rgba(255,255,255,0.04);
         }
-        @media(min-width: 900px) { .ol-left { display: flex; } }
+        @media(min-width: 960px) { .ol-left { display: flex; } }
 
-        .ol-left-glow {
-          position: absolute; width: 500px; height: 500px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(195,7,63,0.15) 0%, transparent 65%);
-          top: -100px; left: -100px;
-          animation: glowDrift 8s ease-in-out infinite alternate;
-          pointer-events: none;
-        }
-        .ol-left-glow2 {
-          position: absolute; width: 300px; height: 300px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(111,34,50,0.1) 0%, transparent 65%);
-          bottom: 100px; right: -50px;
-          animation: glowDrift 11s ease-in-out infinite alternate-reverse;
-          pointer-events: none;
-        }
-        @keyframes glowDrift {
-          from { transform: translate(0,0) scale(1); }
-          to   { transform: translate(40px,60px) scale(1.1); }
-        }
-
-        .ol-left-grid {
-          position: absolute; inset: 0;
+        .ol-grid {
+          position: absolute; inset: 0; pointer-events: none;
           background-image:
-            linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-          background-size: 48px 48px;
-          pointer-events: none;
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+          background-size: 52px 52px;
+        }
+        .ol-grid-fade {
+          position: absolute; inset: 0; pointer-events: none;
+          background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, #09090b 100%);
         }
 
-        .ol-logo {
+        .ol-left-logo {
           position: relative; z-index: 2;
-          font-family: 'Syne', sans-serif;
-          font-weight: 800; font-size: 28px;
-          color: #fff; letter-spacing: -1px;
+          font-family: 'Unbounded', sans-serif; font-weight: 900;
+          font-size: 26px; color: #fff; letter-spacing: -1.5px;
+          text-decoration: none;
         }
-        .ol-logo em { font-style: normal; color: #C3073F; }
+        .ol-left-logo span { color: #C3073F; }
 
-        .ol-tagline {
-          position: relative; z-index: 2;
+        .ol-left-mid { position: relative; z-index: 2; }
+        .ol-left-mid h2 {
+          font-family: 'Unbounded', sans-serif; font-size: clamp(32px,3vw,46px);
+          font-weight: 900; color: #fff; letter-spacing: -2px;
+          line-height: 1.08; margin-bottom: 20px;
         }
-        .ol-tagline h2 {
-          font-family: 'Syne', sans-serif;
-          font-size: 42px; font-weight: 800;
-          color: #fff; letter-spacing: -2px;
-          line-height: 1.1; margin-bottom: 16px;
-        }
-        .ol-tagline h2 span { color: #C3073F; }
-        .ol-tagline p { font-size: 14px; color: #444; line-height: 1.7; font-weight: 300; }
+        .ol-left-mid h2 span { color: #C3073F; }
+        .ol-left-mid p { font-size: 14px; color: rgba(255,255,255,0.3); line-height: 1.75; font-weight: 300; }
 
-        .ol-stats {
-          position: relative; z-index: 2;
-          display: flex; gap: 32px;
-        }
+        .ol-left-stats { position: relative; z-index: 2; display: flex; gap: 36px; }
         .ol-stat-num {
-          font-family: 'Syne', sans-serif;
-          font-size: 28px; font-weight: 800;
-          color: #fff; letter-spacing: -1px; display: block;
+          font-family: 'Unbounded', sans-serif; font-size: 26px;
+          font-weight: 900; color: #fff; letter-spacing: -1px; display: block; margin-bottom: 4px;
         }
-        .ol-stat-label { font-size: 11px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
+        .ol-stat-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1.5px; text-transform: uppercase; }
 
         /* Правая панель — форма */
         .ol-right {
           flex: 1; display: flex; align-items: center;
-          justify-content: center; padding: 24px;
-          position: relative;
-        }
-
-        .ol-right-glow {
-          position: absolute; width: 400px; height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(195,7,63,0.07) 0%, transparent 65%);
-          top: -100px; right: -100px; pointer-events: none;
+          justify-content: center; padding: 40px 24px;
+          position: relative; z-index: 1;
         }
 
         .ol-form-wrap {
           width: 100%; max-width: 400px;
-          position: relative; z-index: 2;
           animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
         }
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
+          from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Мобильный логотип */
         .ol-mobile-logo {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800; font-size: 24px;
-          color: #fff; letter-spacing: -1px;
-          margin-bottom: 36px; display: block;
+          font-family: 'Unbounded', sans-serif; font-weight: 900;
+          font-size: 22px; color: #fff; letter-spacing: -1.5px;
+          margin-bottom: 40px; display: block; text-decoration: none;
         }
-        .ol-mobile-logo em { font-style: normal; color: #C3073F; }
-        @media(min-width: 900px) { .ol-mobile-logo { display: none; } }
+        .ol-mobile-logo span { color: #C3073F; }
+        @media(min-width: 960px) { .ol-mobile-logo { display: none; } }
 
-        .ol-head { margin-bottom: 32px; }
+        .ol-head { margin-bottom: 36px; }
         .ol-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 26px; font-weight: 800;
-          color: #fff; letter-spacing: -0.5px; margin-bottom: 6px;
+          font-family: 'Unbounded', sans-serif; font-size: 24px;
+          font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-bottom: 8px;
         }
-        .ol-sub { font-size: 13px; color: #444; font-weight: 300; }
+        .ol-sub { font-size: 13px; color: rgba(255,255,255,0.3); font-weight: 300; line-height: 1.6; }
 
         /* Табы */
         .ol-tabs {
           display: flex; gap: 4px;
           background: rgba(255,255,255,0.03);
-          border: 0.5px solid rgba(255,255,255,0.06);
-          border-radius: 12px; padding: 4px;
-          margin-bottom: 28px;
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px; padding: 4px; margin-bottom: 28px;
         }
         .ol-tab {
-          flex: 1; padding: 10px; border-radius: 9px;
-          border: none; cursor: pointer;
-          font-family: 'Onest', sans-serif;
-          font-size: 13px; font-weight: 500;
-          transition: all 0.2s;
-          background: transparent; color: #555;
+          flex: 1; padding: 11px; border-radius: 10px; border: none;
+          cursor: pointer; font-family: 'Onest', sans-serif;
+          font-size: 13px; font-weight: 600; transition: all 0.2s;
+          background: transparent; color: rgba(255,255,255,0.3);
         }
         .ol-tab.active {
-          background: rgba(195,7,63,0.12);
-          color: #fff;
-          border: 0.5px solid rgba(195,7,63,0.2);
+          background: rgba(195,7,63,0.15);
+          color: #fff; border: 1px solid rgba(195,7,63,0.25);
         }
 
         /* Поля */
         .ol-field { margin-bottom: 14px; }
-        .ol-label { font-size: 11px; color: #444; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .ol-label {
+          font-size: 11px; color: rgba(255,255,255,0.3);
+          letter-spacing: 1px; text-transform: uppercase;
+          margin-bottom: 8px; display: block; font-weight: 600;
+        }
         .ol-input-wrap { position: relative; }
         .ol-input {
           width: 100%; padding: 14px 16px;
-          background: rgba(255,255,255,0.03);
-          border: 0.5px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
           border-radius: 12px; color: #F0F0F0;
           font-size: 15px; font-family: 'Onest', sans-serif;
-          outline: none; transition: border-color 0.2s;
+          outline: none; transition: border-color 0.2s, background 0.2s;
+          -webkit-appearance: none;
         }
-        .ol-input:focus { border-color: rgba(195,7,63,0.4); }
-        .ol-input::placeholder { color: #333; }
+        .ol-input:focus {
+          border-color: rgba(195,7,63,0.5);
+          background: rgba(195,7,63,0.03);
+        }
+        .ol-input::placeholder { color: rgba(255,255,255,0.15); }
         .ol-eye {
           position: absolute; right: 14px; top: 50%;
           transform: translateY(-50%);
           background: none; border: none; cursor: pointer;
-          color: #444; font-size: 16px; padding: 4px;
+          color: rgba(255,255,255,0.3); font-size: 16px; padding: 4px;
+          transition: color 0.15s;
         }
+        .ol-eye:hover { color: rgba(255,255,255,0.6); }
 
         /* Кнопка */
         .ol-btn {
           width: 100%; padding: 15px;
           background: #C3073F; border: none;
           border-radius: 12px; color: #fff;
-          font-size: 15px; font-weight: 600;
-          font-family: 'Onest', sans-serif;
-          cursor: pointer; margin-top: 8px;
-          transition: background 0.2s, transform 0.1s;
+          font-size: 15px; font-weight: 700;
+          font-family: 'Onest', sans-serif; cursor: pointer;
+          margin-top: 8px; transition: transform 0.15s, box-shadow 0.15s;
           display: flex; align-items: center; justify-content: center; gap: 8px;
+          box-shadow: 0 4px 24px rgba(195,7,63,0.35);
         }
-        .ol-btn:hover { background: #a8063a; }
+        .ol-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 36px rgba(195,7,63,0.5); }
         .ol-btn:active { transform: scale(0.98); }
-        .ol-btn:disabled { background: #2a0a14; color: #555; cursor: not-allowed; }
+        .ol-btn:disabled { background: rgba(195,7,63,0.2); color: rgba(255,255,255,0.3); cursor: not-allowed; box-shadow: none; transform: none; }
 
         .ol-spin {
           width: 16px; height: 16px;
@@ -245,69 +235,110 @@ export default function OrganizerLogin() {
         /* Разделитель */
         .ol-or {
           display: flex; align-items: center; gap: 12px;
-          margin: 20px 0; color: #2a2a2a;
-          font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+          margin: 20px 0; font-size: 11px;
+          letter-spacing: 1px; text-transform: uppercase;
+          color: rgba(255,255,255,0.15);
         }
         .ol-or::before, .ol-or::after {
-          content: ''; flex: 1; height: 0.5px;
-          background: rgba(255,255,255,0.05);
+          content: ''; flex: 1; height: 1px;
+          background: rgba(255,255,255,0.06);
         }
 
         /* TG кнопка */
         .ol-tg-btn {
           width: 100%; padding: 14px;
-          background: rgba(34,158,217,0.08);
-          border: 0.5px solid rgba(34,158,217,0.2);
+          background: rgba(34,158,217,0.06);
+          border: 1px solid rgba(34,158,217,0.18);
           border-radius: 12px; color: #229ED9;
-          font-size: 14px; font-weight: 500;
-          font-family: 'Onest', sans-serif;
-          cursor: pointer; display: flex;
-          align-items: center; justify-content: center; gap: 10px;
-          transition: background 0.2s;
+          font-size: 14px; font-weight: 600;
+          font-family: 'Onest', sans-serif; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: background 0.2s, border-color 0.2s;
         }
-        .ol-tg-btn:hover { background: rgba(34,158,217,0.14); }
-
+        .ol-tg-btn:hover {
+          background: rgba(34,158,217,0.1);
+          border-color: rgba(34,158,217,0.3);
+        }
         .ol-tg-icon {
-          width: 24px; height: 24px; border-radius: 50%;
-          background: #229ED9; display: flex;
-          align-items: center; justify-content: center;
-          flex-shrink: 0; font-size: 13px;
+          width: 26px; height: 26px; border-radius: 50%;
+          background: #229ED9; display: flex; align-items: center;
+          justify-content: center; flex-shrink: 0; font-size: 14px;
         }
 
         /* TG экран */
-        .ol-tg-screen { text-align: center; padding: 8px 0; }
-        .ol-tg-big { font-size: 48px; margin-bottom: 12px; }
-        .ol-tg-screen h3 {
-          font-family: 'Syne', sans-serif; font-size: 18px;
-          font-weight: 700; color: #fff; margin-bottom: 8px;
+        .ol-tg-screen { text-align: center; padding: 16px 0 8px; }
+        .ol-tg-big {
+          width: 88px; height: 88px; border-radius: 28px;
+          background: rgba(34,158,217,0.08); border: 1px solid rgba(34,158,217,0.15);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 40px; margin: 0 auto 20px;
         }
-        .ol-tg-screen p { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 24px; }
+        .ol-tg-screen h3 {
+          font-family: 'Unbounded', sans-serif; font-size: 18px;
+          font-weight: 900; color: #fff; margin-bottom: 10px; letter-spacing: -0.5px;
+        }
+        .ol-tg-screen p { font-size: 13px; color: rgba(255,255,255,0.3); line-height: 1.7; margin-bottom: 28px; }
 
         .ol-back {
-          background: none; border: none; color: #444;
-          font-size: 13px; cursor: pointer;
-          font-family: 'Onest', sans-serif;
-          margin-top: 16px; display: block; width: 100%;
-          text-align: center; padding: 8px;
+          background: none; border: none; color: rgba(255,255,255,0.25);
+          font-size: 13px; cursor: pointer; font-family: 'Onest', sans-serif;
+          margin-top: 14px; display: block; width: 100%;
+          text-align: center; padding: 10px; transition: color 0.15s;
         }
-        .ol-back:hover { color: #888; }
+        .ol-back:hover { color: rgba(255,255,255,0.5); }
 
-        .ol-footer { margin-top: 24px; text-align: center; font-size: 11px; color: #2a2a2a; line-height: 1.6; }
-        .ol-footer a { color: #444; text-decoration: none; }
+        .ol-footer {
+          margin-top: 28px; text-align: center;
+          font-size: 11px; color: rgba(255,255,255,0.15); line-height: 1.8;
+        }
+        .ol-footer a { color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.15s; }
+        .ol-footer a:hover { color: rgba(255,255,255,0.6); }
+
+        /* Декоративные точки на левой панели */
+        .ol-dot {
+          position: absolute; border-radius: 50%;
+          background: rgba(195,7,63,0.4);
+          filter: blur(0px);
+          animation: dotPulse 3s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+          0%,100% { opacity: 0.4; transform: scale(1); }
+          50%      { opacity: 0.8; transform: scale(1.3); }
+        }
       `}</style>
+
+      <div className="ol-blob ol-blob-1"/>
+      <div className="ol-blob ol-blob-2"/>
 
       <div className="ol-root">
         {/* Левая декоративная панель */}
         <div className="ol-left">
-          <div className="ol-left-glow" />
-          <div className="ol-left-glow2" />
-          <div className="ol-left-grid" />
-          <div className="ol-logo">tusi<em>'m</em></div>
-          <div className="ol-tagline">
-            <h2>Краудсорсинг<br/>фото на твоём<br/><span>мероприятии</span></h2>
-            <p>QR-код вместо фотографа.<br/>Гости снимают — альбом собирается сам.</p>
+          <div className="ol-grid"/>
+          <div className="ol-grid-fade"/>
+
+          {/* Декоративные точки */}
+          <div className="ol-dot" style={{width:4,height:4,top:'22%',left:'18%',animationDelay:'0s'}}/>
+          <div className="ol-dot" style={{width:3,height:3,top:'45%',left:'72%',animationDelay:'1s'}}/>
+          <div className="ol-dot" style={{width:5,height:5,top:'68%',left:'35%',animationDelay:'2s'}}/>
+          <div className="ol-dot" style={{width:3,height:3,top:'80%',left:'60%',animationDelay:'0.5s'}}/>
+          <div className="ol-dot" style={{width:4,height:4,top:'15%',left:'55%',animationDelay:'1.5s'}}/>
+
+          <a href="/" className="ol-left-logo">tusi<span>'m</span></a>
+
+          <div className="ol-left-mid">
+            <h2>
+              Краудсорсинг<br/>
+              фото на твоём<br/>
+              <span>мероприятии</span>
+            </h2>
+            <p>
+              QR-код вместо фотографа.<br/>
+              Гости снимают — альбом<br/>
+              собирается сам.
+            </p>
           </div>
-          <div className="ol-stats">
+
+          <div className="ol-left-stats">
             <div>
               <span className="ol-stat-num">500+</span>
               <span className="ol-stat-label">гостей</span>
@@ -325,9 +356,8 @@ export default function OrganizerLogin() {
 
         {/* Правая панель — форма */}
         <div className="ol-right">
-          <div className="ol-right-glow" />
           <div className="ol-form-wrap">
-            <span className="ol-mobile-logo">tusi<em>'m</em></span>
+            <a href="/" className="ol-mobile-logo">tusi<span>'m</span></a>
 
             <div className="ol-head">
               <div className="ol-title">Кабинет организатора</div>
@@ -336,10 +366,10 @@ export default function OrganizerLogin() {
 
             {tab !== 'tg-screen' && (
               <div className="ol-tabs">
-                <button className={`ol-tab${tab === 'phone' ? ' active' : ''}`} onClick={() => setTab('phone')}>
+                <button className={`ol-tab${tab==='phone'?' active':''}`} onClick={() => setTab('phone')}>
                   📱 Телефон
                 </button>
-                <button className={`ol-tab${tab === 'tg' ? ' active' : ''}`} onClick={() => setTab('tg')}>
+                <button className={`ol-tab${tab==='tg'?' active':''}`} onClick={() => setTab('tg')}>
                   ✈️ Telegram
                 </button>
               </div>
@@ -350,11 +380,9 @@ export default function OrganizerLogin() {
                 <div className="ol-field">
                   <label className="ol-label">Телефон</label>
                   <input
-                    className="ol-input"
-                    type="tel"
+                    className="ol-input" type="tel"
                     placeholder="+7 999 000-00-00"
-                    value={phone}
-                    onChange={e => setPhone(formatPhone(e.target.value))}
+                    value={phone} onChange={e => setPhone(formatPhone(e.target.value))}
                     required
                   />
                 </div>
@@ -365,10 +393,8 @@ export default function OrganizerLogin() {
                       className="ol-input"
                       type={showPass ? 'text' : 'password'}
                       placeholder="••••••••"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      style={{ paddingRight: '44px' }}
-                      required
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      style={{ paddingRight: '44px' }} required
                     />
                     <button type="button" className="ol-eye" onClick={() => setShowPass(v => !v)}>
                       {showPass ? '🙈' : '👁'}
@@ -376,7 +402,7 @@ export default function OrganizerLogin() {
                   </div>
                 </div>
                 <button className="ol-btn" type="submit" disabled={loading}>
-                  {loading ? <span className="ol-spin" /> : 'Войти'}
+                  {loading ? <span className="ol-spin"/> : 'Войти →'}
                 </button>
                 <div className="ol-or">или</div>
                 <button type="button" className="ol-tg-btn" onClick={() => setTab('tg-screen')}>
@@ -394,7 +420,7 @@ export default function OrganizerLogin() {
                   <p>Нажми кнопку ниже — откроется Telegram.<br/>Подтверди вход одним касанием.</p>
                 </div>
                 <button className="ol-btn" onClick={handleTgLogin} disabled={loading}>
-                  {loading ? <span className="ol-spin" /> : <><span>Открыть Telegram</span></>}
+                  {loading ? <span className="ol-spin"/> : 'Открыть Telegram'}
                 </button>
                 <button className="ol-back" onClick={() => setTab('phone')}>← Войти по телефону</button>
               </div>
@@ -408,7 +434,7 @@ export default function OrganizerLogin() {
                   <p>Нажми кнопку ниже — откроется Telegram.<br/>Подтверди вход одним касанием.</p>
                 </div>
                 <button className="ol-btn" onClick={handleTgLogin} disabled={loading}>
-                  {loading ? <span className="ol-spin" /> : 'Открыть Telegram'}
+                  {loading ? <span className="ol-spin"/> : 'Открыть Telegram'}
                 </button>
                 <button className="ol-back" onClick={() => setTab('phone')}>← Войти по телефону</button>
               </div>
