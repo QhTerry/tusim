@@ -9,7 +9,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru">
       <head>
-        {/* Запрет браузерного зума — кнопки не улетают */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <meta name="theme-color" content="#1A1A1D" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -39,10 +38,6 @@ function BottomNavWrapper() {
           padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
           z-index: 1000;
           animation: navFadeIn 0.4s 0.1s cubic-bezier(.22,1,.36,1) both;
-        }
-
-        .bottom-nav-hidden {
-          display: none !important;
         }
 
         .nav-item {
@@ -75,7 +70,7 @@ function BottomNavWrapper() {
         }
       `}</style>
 
-      <nav className="bottom-nav" id="bottom-nav-root">
+      <nav className="bottom-nav" id="bottom-nav-root" style={{ display: 'none' }}>
         <a id="nav-swipe-link" href="/swipe" className="nav-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#3a3a3a"/>
@@ -106,22 +101,40 @@ function BottomNavWrapper() {
 
       <script dangerouslySetInnerHTML={{ __html: `
         (function() {
-          function checkPath() {
+          var SHOW_ON = ['/event', '/album', '/swipe'];
+
+          function shouldShow(path) {
+            return SHOW_ON.some(function(prefix) {
+              return path === prefix || path.startsWith(prefix + '/') || path.startsWith(prefix + '?');
+            });
+          }
+
+          function updateNav() {
             var path = window.location.pathname;
             var nav = document.getElementById('bottom-nav-root');
             if (!nav) return;
-            var hide = path.startsWith('/organizer') || path.startsWith('/admin');
-            nav.style.display = hide ? 'none' : '';
-          }
-          checkPath();
+            nav.style.display = shouldShow(path) ? 'flex' : 'none';
 
-          // Следим за навигацией (SPA)
+            // Обновляем ссылки с event_id из URL
+            var params = new URLSearchParams(window.location.search);
+            var eventId = params.get('event_id');
+            if (eventId) {
+              var swipeLink = document.getElementById('nav-swipe-link');
+              var albumLink = document.getElementById('nav-album-link');
+              var cameraLink = document.getElementById('nav-camera-link');
+              if (swipeLink) swipeLink.href = '/swipe?event_id=' + eventId;
+              if (albumLink) albumLink.href = '/album?event_id=' + eventId;
+            }
+          }
+
+          updateNav();
+
           var _pushState = history.pushState;
           history.pushState = function() {
             _pushState.apply(history, arguments);
-            checkPath();
+            setTimeout(updateNav, 0);
           };
-          window.addEventListener('popstate', checkPath);
+          window.addEventListener('popstate', updateNav);
         })();
       `}} />
     </>
