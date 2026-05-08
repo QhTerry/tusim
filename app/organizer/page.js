@@ -1,289 +1,423 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function OrganizerPage() {
+export default function OrganizerLogin() {
   const router = useRouter()
-  const telegramRef = useRef(null)
+  const [tab, setTab] = useState('phone') // 'phone' | 'tg'
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('organizer_token')
-    if (token) { router.replace('/organizer/dashboard'); return }
-
-    window.onTelegramAuth = async (tgData) => {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await fetch('/api/telegram-auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(tgData)
-        })
-        const data = await res.json()
-        if (data.ok) {
-          localStorage.setItem('organizer_token', data.token)
-          localStorage.setItem('organizer', JSON.stringify(data.organizer))
-          router.push('/organizer/dashboard')
-        } else {
-          setError(data.error || 'Ошибка авторизации')
-          setLoading(false)
-        }
-      } catch {
-        setError('Ошибка сети')
-        setLoading(false)
-      }
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'tusim_bot')
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)')
-    script.setAttribute('data-request-access', 'write')
-    script.async = true
-    if (telegramRef.current) telegramRef.current.appendChild(script)
-
-    return () => { delete window.onTelegramAuth }
+    setMounted(true)
+    if (localStorage.getItem('organizer_token')) router.replace('/organizer/dashboard')
   }, [])
 
-  const features = [
-    { icon: '📸', text: 'краудсорсинг фото' },
-    { icon: '🔗', text: 'QR-код для гостей' },
-    { icon: '📊', text: 'статистика события' },
-    { icon: '🎛️', text: 'модерация альбома' },
-  ]
+  function formatPhone(val) {
+    const d = val.replace(/\D/g, '').slice(0, 11)
+    if (!d) return ''
+    const n = d.startsWith('8') ? '7' + d.slice(1) : d
+    let r = '+7'
+    if (n.length > 1) r += ' ' + n.slice(1, 4)
+    if (n.length > 4) r += ' ' + n.slice(4, 7)
+    if (n.length > 7) r += '-' + n.slice(7, 9)
+    if (n.length > 9) r += '-' + n.slice(9, 11)
+    return r
+  }
+
+  function handleLogin(e) {
+    e.preventDefault()
+    setLoading(true)
+    setTimeout(() => {
+      localStorage.setItem('organizer_token', 'stub_token')
+      localStorage.setItem('organizer', JSON.stringify({ name: 'Организатор', phone }))
+      router.push('/organizer/dashboard')
+    }, 1000)
+  }
+
+  function handleTgLogin() {
+    setLoading(true)
+    setTimeout(() => {
+      localStorage.setItem('organizer_token', 'stub_token')
+      localStorage.setItem('organizer', JSON.stringify({ name: 'TG Пользователь' }))
+      router.push('/organizer/dashboard')
+    }, 1200)
+  }
+
+  if (!mounted) return null
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Onest:wght@300;400;500;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .op-root {
-          min-height: 100vh;
-          background: #0e0e10;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Onest', sans-serif;
-          position: relative;
-          overflow: hidden;
+        .ol-root {
+          min-height: 100vh; min-height: 100dvh;
+          background: #0c0c0e;
+          display: flex; font-family: 'Onest', sans-serif;
+          position: relative; overflow: hidden;
         }
 
-        .op-glow1 {
-          position: absolute;
-          width: 700px; height: 700px;
+        /* Левая панель — декоративная */
+        .ol-left {
+          display: none;
+          width: 45%; background: #111114;
+          border-right: 0.5px solid rgba(255,255,255,0.04);
+          position: relative; overflow: hidden;
+          flex-direction: column; justify-content: space-between;
+          padding: 48px;
+        }
+        @media(min-width: 900px) { .ol-left { display: flex; } }
+
+        .ol-left-glow {
+          position: absolute; width: 500px; height: 500px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(195,7,63,0.13) 0%, transparent 65%);
-          top: -250px; left: -250px;
-          animation: opDrift1 9s ease-in-out infinite alternate;
+          background: radial-gradient(circle, rgba(195,7,63,0.15) 0%, transparent 65%);
+          top: -100px; left: -100px;
+          animation: glowDrift 8s ease-in-out infinite alternate;
           pointer-events: none;
         }
-        .op-glow2 {
-          position: absolute;
-          width: 500px; height: 500px;
+        .ol-left-glow2 {
+          position: absolute; width: 300px; height: 300px;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(111,34,50,0.1) 0%, transparent 65%);
-          bottom: -180px; right: -120px;
-          animation: opDrift2 11s ease-in-out infinite alternate;
+          bottom: 100px; right: -50px;
+          animation: glowDrift 11s ease-in-out infinite alternate-reverse;
           pointer-events: none;
         }
-        .op-grid {
+        @keyframes glowDrift {
+          from { transform: translate(0,0) scale(1); }
+          to   { transform: translate(40px,60px) scale(1.1); }
+        }
+
+        .ol-left-grid {
           position: absolute; inset: 0;
           background-image:
-            linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-          background-size: 56px 56px;
+            linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+          background-size: 48px 48px;
           pointer-events: none;
         }
 
-        @keyframes opDrift1 {
-          from { transform: translate(0,0) scale(1); }
-          to   { transform: translate(80px,50px) scale(1.12); }
+        .ol-logo {
+          position: relative; z-index: 2;
+          font-family: 'Syne', sans-serif;
+          font-weight: 800; font-size: 28px;
+          color: #fff; letter-spacing: -1px;
         }
-        @keyframes opDrift2 {
-          from { transform: translate(0,0); }
-          to   { transform: translate(-50px,-70px) scale(1.1); }
+        .ol-logo em { font-style: normal; color: #C3073F; }
+
+        .ol-tagline {
+          position: relative; z-index: 2;
+        }
+        .ol-tagline h2 {
+          font-family: 'Syne', sans-serif;
+          font-size: 42px; font-weight: 800;
+          color: #fff; letter-spacing: -2px;
+          line-height: 1.1; margin-bottom: 16px;
+        }
+        .ol-tagline h2 span { color: #C3073F; }
+        .ol-tagline p { font-size: 14px; color: #444; line-height: 1.7; font-weight: 300; }
+
+        .ol-stats {
+          position: relative; z-index: 2;
+          display: flex; gap: 32px;
+        }
+        .ol-stat-num {
+          font-family: 'Syne', sans-serif;
+          font-size: 28px; font-weight: 800;
+          color: #fff; letter-spacing: -1px; display: block;
+        }
+        .ol-stat-label { font-size: 11px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* Правая панель — форма */
+        .ol-right {
+          flex: 1; display: flex; align-items: center;
+          justify-content: center; padding: 24px;
+          position: relative;
         }
 
-        .op-content {
-          position: relative; z-index: 10;
-          width: 100%; max-width: 400px;
-          padding: 24px;
-          opacity: 0; transform: translateY(20px);
-          animation: opFadeUp 0.55s cubic-bezier(0.16,1,0.3,1) 0.05s forwards;
-        }
-        @keyframes opFadeUp {
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .op-logo {
-          margin-bottom: 40px;
-        }
-        .op-logo-text {
-          font-family: 'Unbounded', sans-serif;
-          font-size: 38px; font-weight: 900;
-          color: #F0F0F0; letter-spacing: -2px;
-          line-height: 1; margin-bottom: 10px;
-        }
-        .op-logo-text span { color: #C3073F; }
-        .op-logo-sub {
-          font-size: 11px; color: #444;
-          letter-spacing: 3px; text-transform: uppercase; font-weight: 300;
-        }
-
-        .op-card {
-          background: rgba(20,20,24,0.95);
-          border: 0.5px solid rgba(255,255,255,0.06);
-          border-radius: 24px; padding: 32px;
-          position: relative; overflow: hidden;
-          backdrop-filter: blur(30px);
-          margin-bottom: 10px;
-        }
-        .op-card::before {
-          content: '';
-          position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(195,7,63,0.5), transparent);
-        }
-        .op-card::after {
-          content: '';
-          position: absolute; bottom: 0; left: 0; right: 0; top: 0;
-          background: radial-gradient(ellipse at top left, rgba(195,7,63,0.04) 0%, transparent 60%);
-          pointer-events: none;
-        }
-
-        .op-dot {
-          position: absolute; border-radius: 50%; pointer-events: none;
-        }
-        .op-dot1 { width: 5px; height: 5px; background: #C3073F; top: 28px; right: 28px; opacity: 0.7; animation: opPulse 2.5s ease-in-out infinite; }
-        .op-dot2 { width: 3px; height: 3px; background: #C3073F; top: 44px; right: 44px; opacity: 0.3; animation: opPulse 2.5s ease-in-out infinite 0.8s; }
-        @keyframes opPulse {
-          0%,100% { opacity: 0.7; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.5); }
-        }
-
-        .op-title {
-          font-size: 19px; font-weight: 500;
-          color: #F0F0F0; margin-bottom: 7px; letter-spacing: -0.3px;
-        }
-        .op-desc {
-          font-size: 13px; color: #4a4a4a;
-          line-height: 1.65; margin-bottom: 26px; font-weight: 300;
-        }
-
-        .op-tg-wrap {
-          display: flex; justify-content: center;
-          min-height: 52px; position: relative; z-index: 1;
-        }
-
-        .op-spinner {
-          display: flex; align-items: center;
-          justify-content: center; gap: 12px;
-          padding: 16px; color: #444; font-size: 13px;
-        }
-        .op-spin {
-          width: 18px; height: 18px;
-          border: 2px solid #222; border-top-color: #C3073F;
+        .ol-right-glow {
+          position: absolute; width: 400px; height: 400px;
           border-radius: 50%;
-          animation: opSpin 0.7s linear infinite;
-        }
-        @keyframes opSpin { to { transform: rotate(360deg); } }
-
-        .op-error {
-          margin-top: 14px; padding: 12px 16px;
-          background: rgba(195,7,63,0.07);
-          border: 0.5px solid rgba(195,7,63,0.18);
-          border-radius: 12px; color: #d04060; font-size: 13px;
+          background: radial-gradient(circle, rgba(195,7,63,0.07) 0%, transparent 65%);
+          top: -100px; right: -100px; pointer-events: none;
         }
 
-        .op-divider {
+        .ol-form-wrap {
+          width: 100%; max-width: 400px;
+          position: relative; z-index: 2;
+          animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Мобильный логотип */
+        .ol-mobile-logo {
+          font-family: 'Syne', sans-serif;
+          font-weight: 800; font-size: 24px;
+          color: #fff; letter-spacing: -1px;
+          margin-bottom: 36px; display: block;
+        }
+        .ol-mobile-logo em { font-style: normal; color: #C3073F; }
+        @media(min-width: 900px) { .ol-mobile-logo { display: none; } }
+
+        .ol-head { margin-bottom: 32px; }
+        .ol-title {
+          font-family: 'Syne', sans-serif;
+          font-size: 26px; font-weight: 800;
+          color: #fff; letter-spacing: -0.5px; margin-bottom: 6px;
+        }
+        .ol-sub { font-size: 13px; color: #444; font-weight: 300; }
+
+        /* Табы */
+        .ol-tabs {
+          display: flex; gap: 4px;
+          background: rgba(255,255,255,0.03);
+          border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 12px; padding: 4px;
+          margin-bottom: 28px;
+        }
+        .ol-tab {
+          flex: 1; padding: 10px; border-radius: 9px;
+          border: none; cursor: pointer;
+          font-family: 'Onest', sans-serif;
+          font-size: 13px; font-weight: 500;
+          transition: all 0.2s;
+          background: transparent; color: #555;
+        }
+        .ol-tab.active {
+          background: rgba(195,7,63,0.12);
+          color: #fff;
+          border: 0.5px solid rgba(195,7,63,0.2);
+        }
+
+        /* Поля */
+        .ol-field { margin-bottom: 14px; }
+        .ol-label { font-size: 11px; color: #444; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .ol-input-wrap { position: relative; }
+        .ol-input {
+          width: 100%; padding: 14px 16px;
+          background: rgba(255,255,255,0.03);
+          border: 0.5px solid rgba(255,255,255,0.08);
+          border-radius: 12px; color: #F0F0F0;
+          font-size: 15px; font-family: 'Onest', sans-serif;
+          outline: none; transition: border-color 0.2s;
+        }
+        .ol-input:focus { border-color: rgba(195,7,63,0.4); }
+        .ol-input::placeholder { color: #333; }
+        .ol-eye {
+          position: absolute; right: 14px; top: 50%;
+          transform: translateY(-50%);
+          background: none; border: none; cursor: pointer;
+          color: #444; font-size: 16px; padding: 4px;
+        }
+
+        /* Кнопка */
+        .ol-btn {
+          width: 100%; padding: 15px;
+          background: #C3073F; border: none;
+          border-radius: 12px; color: #fff;
+          font-size: 15px; font-weight: 600;
+          font-family: 'Onest', sans-serif;
+          cursor: pointer; margin-top: 8px;
+          transition: background 0.2s, transform 0.1s;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .ol-btn:hover { background: #a8063a; }
+        .ol-btn:active { transform: scale(0.98); }
+        .ol-btn:disabled { background: #2a0a14; color: #555; cursor: not-allowed; }
+
+        .ol-spin {
+          width: 16px; height: 16px;
+          border: 2px solid rgba(255,255,255,0.2);
+          border-top-color: #fff; border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Разделитель */
+        .ol-or {
           display: flex; align-items: center; gap: 12px;
-          margin: 22px 0 0; color: #2a2a2a;
-          font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+          margin: 20px 0; color: #2a2a2a;
+          font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
         }
-        .op-divider::before, .op-divider::after {
+        .ol-or::before, .ol-or::after {
           content: ''; flex: 1; height: 0.5px;
-          background: rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.05);
         }
 
-        .op-feats {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-          margin-top: 10px;
+        /* TG кнопка */
+        .ol-tg-btn {
+          width: 100%; padding: 14px;
+          background: rgba(34,158,217,0.08);
+          border: 0.5px solid rgba(34,158,217,0.2);
+          border-radius: 12px; color: #229ED9;
+          font-size: 14px; font-weight: 500;
+          font-family: 'Onest', sans-serif;
+          cursor: pointer; display: flex;
+          align-items: center; justify-content: center; gap: 10px;
+          transition: background 0.2s;
         }
-        .op-feat {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 14px;
-          background: rgba(255,255,255,0.015);
-          border: 0.5px solid rgba(255,255,255,0.04);
-          border-radius: 14px;
-          font-size: 12px; color: #3a3a3a;
-          transition: border-color 0.25s, color 0.25s, background 0.25s;
-          cursor: default;
-        }
-        .op-feat:hover {
-          border-color: rgba(195,7,63,0.18);
-          color: #666;
-          background: rgba(195,7,63,0.03);
-        }
-        .op-feat-icon {
-          width: 30px; height: 30px;
-          background: rgba(195,7,63,0.07);
-          border-radius: 9px;
-          display: flex; align-items: center;
-          justify-content: center; font-size: 15px; flex-shrink: 0;
+        .ol-tg-btn:hover { background: rgba(34,158,217,0.14); }
+
+        .ol-tg-icon {
+          width: 24px; height: 24px; border-radius: 50%;
+          background: #229ED9; display: flex;
+          align-items: center; justify-content: center;
+          flex-shrink: 0; font-size: 13px;
         }
 
-        /* Скрываем глобальную нижнюю навигацию */
-        nav[class], footer[class],
-        div[class*="bottom"], div[class*="nav-bar"],
-        div[class*="tabbar"] {
-          display: none !important;
+        /* TG экран */
+        .ol-tg-screen { text-align: center; padding: 8px 0; }
+        .ol-tg-big { font-size: 48px; margin-bottom: 12px; }
+        .ol-tg-screen h3 {
+          font-family: 'Syne', sans-serif; font-size: 18px;
+          font-weight: 700; color: #fff; margin-bottom: 8px;
         }
+        .ol-tg-screen p { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 24px; }
+
+        .ol-back {
+          background: none; border: none; color: #444;
+          font-size: 13px; cursor: pointer;
+          font-family: 'Onest', sans-serif;
+          margin-top: 16px; display: block; width: 100%;
+          text-align: center; padding: 8px;
+        }
+        .ol-back:hover { color: #888; }
+
+        .ol-footer { margin-top: 24px; text-align: center; font-size: 11px; color: #2a2a2a; line-height: 1.6; }
+        .ol-footer a { color: #444; text-decoration: none; }
       `}</style>
 
-      <div className="op-root">
-        <div className="op-glow1" />
-        <div className="op-glow2" />
-        <div className="op-grid" />
-
-        <div className="op-content">
-          <div className="op-logo">
-            <div className="op-logo-text">tusi<span>'</span>m</div>
-            <div className="op-logo-sub">кабинет организатора</div>
+      <div className="ol-root">
+        {/* Левая декоративная панель */}
+        <div className="ol-left">
+          <div className="ol-left-glow" />
+          <div className="ol-left-glow2" />
+          <div className="ol-left-grid" />
+          <div className="ol-logo">tusi<em>'m</em></div>
+          <div className="ol-tagline">
+            <h2>Краудсорсинг<br/>фото на твоём<br/><span>мероприятии</span></h2>
+            <p>QR-код вместо фотографа.<br/>Гости снимают — альбом собирается сам.</p>
           </div>
+          <div className="ol-stats">
+            <div>
+              <span className="ol-stat-num">500+</span>
+              <span className="ol-stat-label">гостей</span>
+            </div>
+            <div>
+              <span className="ol-stat-num">0</span>
+              <span className="ol-stat-label">приложений</span>
+            </div>
+            <div>
+              <span className="ol-stat-num">∞</span>
+              <span className="ol-stat-label">фото</span>
+            </div>
+          </div>
+        </div>
 
-          <div className="op-card">
-            <div className="op-dot op-dot1" />
-            <div className="op-dot op-dot2" />
+        {/* Правая панель — форма */}
+        <div className="ol-right">
+          <div className="ol-right-glow" />
+          <div className="ol-form-wrap">
+            <span className="ol-mobile-logo">tusi<em>'m</em></span>
 
-            <div className="op-title">Войди через Telegram</div>
-            <div className="op-desc">
-              Один клик — и ты в кабинете. Создавай события, выбирай тариф и управляй альбомом своих гостей.
+            <div className="ol-head">
+              <div className="ol-title">Кабинет организатора</div>
+              <div className="ol-sub">Войди чтобы управлять событиями</div>
             </div>
 
-            {!loading
-              ? <div className="op-tg-wrap" ref={telegramRef} />
-              : (
-                <div className="op-spinner">
-                  <div className="op-spin" />
-                  входим в кабинет...
-                </div>
-              )
-            }
-
-            {error && <div className="op-error">{error}</div>}
-
-            <div className="op-divider">включено</div>
-          </div>
-
-          <div className="op-feats">
-            {features.map((f, i) => (
-              <div className="op-feat" key={i}>
-                <div className="op-feat-icon">{f.icon}</div>
-                {f.text}
+            {tab !== 'tg-screen' && (
+              <div className="ol-tabs">
+                <button className={`ol-tab${tab === 'phone' ? ' active' : ''}`} onClick={() => setTab('phone')}>
+                  📱 Телефон
+                </button>
+                <button className={`ol-tab${tab === 'tg' ? ' active' : ''}`} onClick={() => setTab('tg')}>
+                  ✈️ Telegram
+                </button>
               </div>
-            ))}
+            )}
+
+            {tab === 'phone' && (
+              <form onSubmit={handleLogin}>
+                <div className="ol-field">
+                  <label className="ol-label">Телефон</label>
+                  <input
+                    className="ol-input"
+                    type="tel"
+                    placeholder="+7 999 000-00-00"
+                    value={phone}
+                    onChange={e => setPhone(formatPhone(e.target.value))}
+                    required
+                  />
+                </div>
+                <div className="ol-field">
+                  <label className="ol-label">Пароль</label>
+                  <div className="ol-input-wrap">
+                    <input
+                      className="ol-input"
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      style={{ paddingRight: '44px' }}
+                      required
+                    />
+                    <button type="button" className="ol-eye" onClick={() => setShowPass(v => !v)}>
+                      {showPass ? '🙈' : '👁'}
+                    </button>
+                  </div>
+                </div>
+                <button className="ol-btn" type="submit" disabled={loading}>
+                  {loading ? <span className="ol-spin" /> : 'Войти'}
+                </button>
+                <div className="ol-or">или</div>
+                <button type="button" className="ol-tg-btn" onClick={() => setTab('tg-screen')}>
+                  <div className="ol-tg-icon">✈️</div>
+                  Войти через Telegram
+                </button>
+              </form>
+            )}
+
+            {tab === 'tg' && (
+              <div>
+                <div className="ol-tg-screen">
+                  <div className="ol-tg-big">✈️</div>
+                  <h3>Войти через Telegram</h3>
+                  <p>Нажми кнопку ниже — откроется Telegram.<br/>Подтверди вход одним касанием.</p>
+                </div>
+                <button className="ol-btn" onClick={handleTgLogin} disabled={loading}>
+                  {loading ? <span className="ol-spin" /> : <><span>Открыть Telegram</span></>}
+                </button>
+                <button className="ol-back" onClick={() => setTab('phone')}>← Войти по телефону</button>
+              </div>
+            )}
+
+            {tab === 'tg-screen' && (
+              <div>
+                <div className="ol-tg-screen">
+                  <div className="ol-tg-big">✈️</div>
+                  <h3>Войти через Telegram</h3>
+                  <p>Нажми кнопку ниже — откроется Telegram.<br/>Подтверди вход одним касанием.</p>
+                </div>
+                <button className="ol-btn" onClick={handleTgLogin} disabled={loading}>
+                  {loading ? <span className="ol-spin" /> : 'Открыть Telegram'}
+                </button>
+                <button className="ol-back" onClick={() => setTab('phone')}>← Войти по телефону</button>
+              </div>
+            )}
+
+            <div className="ol-footer">
+              Нет аккаунта? <a href="#">Зарегистрироваться</a><br/>
+              <a href="#">Забыл пароль</a>
+            </div>
           </div>
         </div>
       </div>
