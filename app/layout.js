@@ -40,7 +40,6 @@ function BottomNavWrapper() {
           z-index: 1000;
           animation: navFadeIn 0.4s 0.1s cubic-bezier(.22,1,.36,1) both;
         }
-
         .nav-item {
           display: flex; flex-direction: column; align-items: center; gap: 4px;
           text-decoration: none; padding: 8px 20px; border-radius: 14px;
@@ -51,7 +50,6 @@ function BottomNavWrapper() {
         }
         .nav-item:active { background: rgba(255,255,255,0.04); opacity: 0.7; }
         .nav-label { font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: #3a3a3a; }
-
         .nav-center-wrap { display: flex; align-items: center; justify-content: center; padding: 4px; }
         .nav-center {
           width: 54px; height: 54px; border-radius: 50%;
@@ -65,7 +63,6 @@ function BottomNavWrapper() {
           transform: scale(0.91);
           box-shadow: 0 0 0 4px rgba(195,7,63,0.08), 0 2px 8px rgba(195,7,63,0.2);
         }
-
         @keyframes navFadeIn {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -81,7 +78,7 @@ function BottomNavWrapper() {
         </a>
 
         <div className="nav-center-wrap">
-          <a id="nav-camera-link" href="/event/loading" style={{ textDecoration:'none', display:'block' }}>
+          <a id="nav-camera-link" href="/event/" style={{ textDecoration:'none', display:'block' }}>
             <div className="nav-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M12 15.5A3.5 3.5 0 018.5 12 3.5 3.5 0 0112 8.5a3.5 3.5 0 013.5 3.5 3.5 3.5 0 01-3.5 3.5m7-10h-3l-2-2H10L8 5H5a2 2 0 00-2 2v11a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2z" fill="white"/>
@@ -124,6 +121,12 @@ function BottomNavWrapper() {
               var albumLink = document.getElementById('nav-album-link');
               if (swipeLink) swipeLink.href = '/swipe?event_id=' + eventId;
               if (albumLink) albumLink.href = '/album?event_id=' + eventId;
+            }
+
+            var cameraLink = document.getElementById('nav-camera-link');
+            if (cameraLink) {
+              var code = localStorage.getItem('tusim_event_code');
+              cameraLink.href = code ? '/event/' + code : '/event/';
             }
           }
 

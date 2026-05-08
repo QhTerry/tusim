@@ -34,17 +34,16 @@ export default function Dashboard() {
     if (!token) { router.replace('/organizer'); return }
     const org = JSON.parse(localStorage.getItem('organizer') || '{}')
     setOrganizer(org)
-    loadEvents(org.id)
-    const t = setInterval(() => loadEvents(org.id), 60000)
-    return () => clearInterval(t)
+    loadEvents()
   }, [])
 
-  async function loadEvents(organizerId) {
+  async function loadEvents() {
     setLoading(true)
     try {
-      let query = supabase.from('events').select('*').order('created_at', { ascending: false })
-      if (organizerId) query = query.eq('organizer_id', organizerId)
-      const { data, error } = await query
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
       if (!error && data) setEvents(data)
     } catch(e) {}
     setLoading(false)
@@ -58,7 +57,6 @@ export default function Dashboard() {
 
   if (!organizer) return null
 
-  const totalGuests = events.reduce((a, e) => a + (e.guest_count || 0), 0)
   const totalPhotos = events.reduce((a, e) => a + (e.photo_count || 0), 0)
   const activeCount = events.filter(e => e.status === 'active').length
 
@@ -73,20 +71,17 @@ export default function Dashboard() {
           color: #F0F0F0; position: relative; overflow-x: hidden;
         }
 
-        /* Блобы */
         .db-blob {
           position: fixed; border-radius: 50%;
           filter: blur(120px); pointer-events: none; z-index: 0;
         }
         .db-blob-1 {
-          width: 700px; height: 700px;
-          background: rgba(195,7,63,0.07);
+          width: 700px; height: 700px; background: rgba(195,7,63,0.07);
           top: -300px; left: -200px;
           animation: blobDrift 24s ease-in-out infinite alternate;
         }
         .db-blob-2 {
-          width: 500px; height: 500px;
-          background: rgba(195,7,63,0.04);
+          width: 500px; height: 500px; background: rgba(195,7,63,0.04);
           bottom: -200px; right: -150px;
           animation: blobDrift 30s ease-in-out infinite alternate-reverse;
         }
@@ -95,7 +90,6 @@ export default function Dashboard() {
           to   { transform: translate(60px,80px) scale(1.15); }
         }
 
-        /* Хедер */
         .db-header {
           position: sticky; top: 0; z-index: 100;
           background: rgba(9,9,11,0.85);
@@ -106,12 +100,10 @@ export default function Dashboard() {
         }
         .db-logo {
           font-family: 'Unbounded', sans-serif; font-weight: 900;
-          font-size: 20px; color: #fff; letter-spacing: -1.5px;
-          text-decoration: none;
+          font-size: 20px; color: #fff; letter-spacing: -1.5px; text-decoration: none;
         }
         .db-logo span { color: #C3073F; }
 
-        .db-header-right { display: flex; align-items: center; gap: 12px; }
         .db-avatar {
           width: 36px; height: 36px; border-radius: 50%;
           background: linear-gradient(135deg, #C3073F, #6F2232);
@@ -145,22 +137,21 @@ export default function Dashboard() {
         .db-menu-item.danger:hover { background: rgba(195,7,63,0.08); color: #C3073F; }
         .db-menu-sep { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0; }
 
-        /* Контент */
         .db-body {
           max-width: 920px; margin: 0 auto;
           padding: 40px 24px 120px;
           position: relative; z-index: 1;
         }
 
-        /* Приветствие */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
         .db-welcome {
           display: flex; align-items: flex-end; justify-content: space-between;
           gap: 16px; flex-wrap: wrap; margin-bottom: 36px;
           animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
-        }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
         }
         .db-welcome-title {
           font-family: 'Unbounded', sans-serif;
@@ -176,13 +167,11 @@ export default function Dashboard() {
           border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700;
           font-family: 'Onest', sans-serif; cursor: pointer; white-space: nowrap;
           box-shadow: 0 4px 24px rgba(195,7,63,0.4);
-          transition: transform 0.15s, box-shadow 0.15s;
-          flex-shrink: 0;
+          transition: transform 0.15s, box-shadow 0.15s; flex-shrink: 0;
         }
         .db-create-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 36px rgba(195,7,63,0.55); }
         .db-create-btn:active { transform: scale(0.97); }
 
-        /* Статы */
         .db-stats {
           display: grid; grid-template-columns: repeat(3, 1fr);
           gap: 12px; margin-bottom: 40px;
@@ -197,13 +186,9 @@ export default function Dashboard() {
           position: relative; overflow: hidden;
           transition: border-color 0.2s, background 0.2s;
         }
-        .db-stat:hover {
-          border-color: rgba(195,7,63,0.2);
-          background: rgba(195,7,63,0.02);
-        }
+        .db-stat:hover { border-color: rgba(195,7,63,0.2); background: rgba(195,7,63,0.02); }
         .db-stat::before {
-          content: ''; position: absolute;
-          top: 0; left: 0; right: 0; height: 1px;
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
           background: linear-gradient(90deg, transparent, rgba(195,7,63,0.3), transparent);
           opacity: 0; transition: opacity 0.2s;
         }
@@ -218,7 +203,6 @@ export default function Dashboard() {
           text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
         }
 
-        /* Секция событий */
         .db-section-head {
           display: flex; align-items: center; justify-content: space-between;
           margin-bottom: 16px;
@@ -230,12 +214,10 @@ export default function Dashboard() {
         }
         .db-section-count {
           font-size: 11px; color: rgba(255,255,255,0.3); padding: 4px 12px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.07);
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
           border-radius: 20px; font-weight: 600;
         }
 
-        /* Карточки событий */
         .db-events {
           display: flex; flex-direction: column; gap: 12px;
           animation: fadeUp 0.5s 0.12s cubic-bezier(.22,1,.36,1) both;
@@ -272,8 +254,7 @@ export default function Dashboard() {
         .db-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
         .db-badge {
           padding: 4px 10px; border-radius: 20px;
-          font-size: 10px; font-weight: 700; white-space: nowrap;
-          letter-spacing: 0.3px;
+          font-size: 10px; font-weight: 700; white-space: nowrap; letter-spacing: 0.3px;
         }
         .db-badge.active { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
         .db-badge.closed { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.07); }
@@ -311,26 +292,19 @@ export default function Dashboard() {
         .db-action-btn {
           padding: 9px 16px; border-radius: 10px; border: none;
           font-size: 12px; font-weight: 700; font-family: 'Onest', sans-serif;
-          cursor: pointer; transition: all 0.15s; letter-spacing: 0.2px;
+          cursor: pointer; transition: all 0.15s;
         }
-        .db-action-btn.primary {
-          background: #C3073F; color: #fff;
-          box-shadow: 0 2px 12px rgba(195,7,63,0.3);
-        }
+        .db-action-btn.primary { background: #C3073F; color: #fff; box-shadow: 0 2px 12px rgba(195,7,63,0.3); }
         .db-action-btn.primary:hover { background: #a8063a; box-shadow: 0 4px 20px rgba(195,7,63,0.45); }
         .db-action-btn.secondary {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.07);
-          color: rgba(255,255,255,0.5);
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); color: rgba(255,255,255,0.5);
         }
-        .db-action-btn.secondary:hover { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); }
+        .db-action-btn.secondary:hover { color: #fff; background: rgba(255,255,255,0.08); }
 
-        /* Пустое состояние */
         .db-empty {
           text-align: center; padding: 64px 24px;
           background: rgba(255,255,255,0.02);
-          border: 1px dashed rgba(255,255,255,0.07);
-          border-radius: 24px;
+          border: 1px dashed rgba(255,255,255,0.07); border-radius: 24px;
           animation: fadeUp 0.5s 0.12s cubic-bezier(.22,1,.36,1) both;
         }
         .db-empty-icon { font-size: 48px; margin-bottom: 20px; display: block; }
@@ -340,7 +314,6 @@ export default function Dashboard() {
         }
         .db-empty p { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 28px; line-height: 1.7; }
 
-        /* Скелетон */
         .db-loading { display: flex; flex-direction: column; gap: 12px; }
         .db-skeleton {
           border-radius: 20px; height: 180px;
@@ -360,21 +333,19 @@ export default function Dashboard() {
       <div className="db-root">
         <header className="db-header">
           <a href="/" className="db-logo">tusi<span>'m</span></a>
-          <div className="db-header-right">
-            <div style={{ position: 'relative' }}>
-              <button className="db-avatar" onClick={() => setMenuOpen(v => !v)}>
-                {organizer.name?.[0]?.toUpperCase() || organizer.first_name?.[0]?.toUpperCase() || 'О'}
-              </button>
-              {menuOpen && (
-                <div className="db-menu">
-                  <button className="db-menu-item" style={{ color: '#F0F0F0', cursor: 'default', fontWeight: 600 }}>
-                    {organizer.name || organizer.first_name || 'Организатор'}
-                  </button>
-                  <div className="db-menu-sep"/>
-                  <button className="db-menu-item danger" onClick={logout}>Выйти</button>
-                </div>
-              )}
-            </div>
+          <div style={{ position: 'relative' }}>
+            <button className="db-avatar" onClick={() => setMenuOpen(v => !v)}>
+              {organizer.name?.[0]?.toUpperCase() || organizer.first_name?.[0]?.toUpperCase() || 'О'}
+            </button>
+            {menuOpen && (
+              <div className="db-menu">
+                <button className="db-menu-item" style={{ color: '#F0F0F0', cursor: 'default', fontWeight: 600 }}>
+                  {organizer.name || organizer.first_name || 'Организатор'}
+                </button>
+                <div className="db-menu-sep"/>
+                <button className="db-menu-item danger" onClick={logout}>Выйти</button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -394,10 +365,10 @@ export default function Dashboard() {
           <div className="db-stats">
             {[
               { val: events.length, label: 'Событий' },
-              { val: activeCount, label: 'Активных' },
-              { val: totalPhotos, label: 'Фото' },
+              { val: activeCount,   label: 'Активных' },
+              { val: totalPhotos,   label: 'Фото' },
             ].map((s, i) => (
-              <div key={s.label} className="db-stat" style={{ animationDelay: `${i * 0.04}s` }}>
+              <div key={s.label} className="db-stat">
                 <span className="db-stat-val">{s.val}</span>
                 <span className="db-stat-label">{s.label}</span>
               </div>
@@ -419,7 +390,7 @@ export default function Dashboard() {
               <span className="db-empty-icon">📸</span>
               <h3>Нет событий</h3>
               <p>Создай первое событие и получи QR-код<br/>для своих гостей</p>
-              <button className="db-create-btn" style={{ display: 'inline-flex', margin: '0 auto' }}
+              <button className="db-create-btn" style={{ display:'inline-flex', margin:'0 auto' }}
                 onClick={() => router.push('/organizer/create')}>
                 Создать событие
               </button>
@@ -433,11 +404,7 @@ export default function Dashboard() {
                 const tl = timeLeft(ev.ends_at)
                 const isActive = ev.status === 'active'
                 return (
-                  <div
-                    key={ev.id}
-                    className={`db-event${isActive ? ' active-event' : ''}`}
-                    style={{ animationDelay: `${idx * 0.04}s` }}
-                  >
+                  <div key={ev.id} className={`db-event${isActive ? ' active-event' : ''}`}>
                     <div className="db-event-top">
                       <div>
                         <div className="db-event-name">{ev.name}</div>
@@ -455,7 +422,7 @@ export default function Dashboard() {
                       <div className="db-meta-item">
                         <span className="db-meta-val">
                           {guestCount}
-                          {ev.guest_limit && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>/{ev.guest_limit}</span>}
+                          {ev.guest_limit && <span style={{ fontSize:12, color:'rgba(255,255,255,0.2)', fontWeight:400 }}>/{ev.guest_limit}</span>}
                         </span>
                         <span className="db-meta-sub">Гостей</span>
                       </div>
@@ -471,7 +438,7 @@ export default function Dashboard() {
 
                     {ev.guest_limit && (
                       <div className="db-event-bar">
-                        <div className="db-event-bar-fill" style={{ width: `${pct}%` }}/>
+                        <div className="db-event-bar-fill" style={{ width:`${pct}%` }}/>
                       </div>
                     )}
 
