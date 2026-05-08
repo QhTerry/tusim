@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 
-// Animated counter hook
 function useCounter(target, duration = 1800, start = false) {
   const [count, setCount] = useState(0)
   useEffect(() => {
@@ -30,7 +29,6 @@ export default function Home() {
   const count2 = useCounter(20000, 2000, statsVisible)
 
   useEffect(() => {
-    // Scroll reveal
     const observer = new IntersectionObserver(
       (entries) => entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
@@ -39,7 +37,6 @@ export default function Home() {
     )
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
 
-    // Stats counter trigger
     const statsObs = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { setStatsVisible(true); statsObs.disconnect() } }),
       { threshold: 0.3 }
@@ -51,10 +48,11 @@ export default function Home() {
 
   const handleSubmit = (e) => { e.preventDefault(); setSubmitted(true) }
 
+  const go = (path) => { window.location.href = path }
+
   const onbSteps = [
     {
-      step: '01',
-      title: 'Сканируй QR-код',
+      step: '01', title: 'Сканируй QR-код',
       desc: 'Организатор расставил QR-коды по залу. Наводи камеру — и ты уже внутри. Без регистрации, без приложения.',
       btn: 'Понятно →',
       svg: <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -71,8 +69,7 @@ export default function Home() {
       </svg>
     },
     {
-      step: '02',
-      title: 'Снимай — осознанно',
+      step: '02', title: 'Снимай — осознанно',
       desc: 'У тебя лимит кадров. Не 200 случайных снимков, а 10 настоящих моментов. Выбирай лучшее.',
       btn: 'Дальше →',
       svg: <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -85,8 +82,7 @@ export default function Home() {
       </svg>
     },
     {
-      step: '03',
-      title: 'Свайпай и голосуй',
+      step: '03', title: 'Свайпай и голосуй',
       desc: 'Листай фото как в тиндере. Вправо — огонь 🔥 влево — следующее. Лучшие кадры поднимаются наверх.',
       btn: 'Ещё →',
       svg: <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -98,8 +94,7 @@ export default function Home() {
       </svg>
     },
     {
-      step: '04',
-      title: 'Смотри всё в реальном времени',
+      step: '04', title: 'Смотри всё в реальном времени',
       desc: 'Общий альбом обновляется мгновенно. Реакции, лайки, архив на скачивание — прямо с телефона.',
       btn: 'Готово! 🎉',
       svg: <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -135,7 +130,6 @@ export default function Home() {
           padding-bottom: 0 !important;
         }
 
-        /* ── NOISE + BLOBS ── */
         .noise { position: fixed; inset: 0; z-index: 1; pointer-events: none;
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
           opacity: 0.6; }
@@ -146,15 +140,14 @@ export default function Home() {
         .blob-3 { width: 550px; height: 550px; background: rgba(195,7,63,0.04); bottom: -120px; left: 25%; animation-delay: -15s; }
         @keyframes drift { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(35px,-45px) scale(1.06);} 66%{transform:translate(-25px,35px) scale(0.96);} }
 
-        /* ── LAYOUT ── */
         .wrap { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; padding: 0 40px; }
 
-        /* ── NAV ── */
+        /* NAV */
         .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 40px; height: 64px;
           display: flex; align-items: center; justify-content: space-between;
           background: rgba(10,10,12,0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
           border-bottom: 1px solid rgba(255,255,255,0.045); }
-        .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        .nav-logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
         .nav-logo em { color: #C3073F; font-style: normal; }
         .nav-right { display: flex; align-items: center; gap: 8px; }
         .nav-login { font-size: 13px; color: rgba(255,255,255,0.35); background: none; border: none; cursor: pointer;
@@ -165,7 +158,7 @@ export default function Home() {
           box-shadow: 0 0 20px rgba(195,7,63,0.3); transition: transform .15s, box-shadow .15s; }
         .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 0 36px rgba(195,7,63,0.55); }
 
-        /* ── HERO ── */
+        /* HERO */
         .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
           text-align: center; padding: 120px 40px 80px; position: relative; z-index: 2; }
         .hero-tag { display: inline-flex; align-items: center; gap: 8px;
@@ -196,7 +189,7 @@ export default function Home() {
           transition: background .2s, transform .15s, color .2s; }
         .btn-ghost:hover { background: rgba(255,255,255,.09); transform: translateY(-2px); color: #fff; }
 
-        /* ── STATS ── */
+        /* STATS */
         .stats { display: flex; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06);
           border-radius: 22px; overflow: hidden; animation: fadeUp .7s .4s ease both; width: 100%; max-width: 520px; }
         .stat { flex: 1; padding: 22px 24px; text-align: center; border-right: 1px solid rgba(255,255,255,.06); }
@@ -205,13 +198,13 @@ export default function Home() {
         .stat-num span { color: #C3073F; }
         .stat-label { font-size: 11px; color: rgba(255,255,255,.28); font-weight: 300; letter-spacing: 0.5px; }
 
-        /* ── REVEAL ── */
+        /* REVEAL */
         .reveal { opacity: 0; transform: translateY(32px); transition: opacity .75s ease, transform .75s ease; }
         .reveal.visible { opacity: 1; transform: translateY(0); }
         .d1 { transition-delay: .05s; } .d2 { transition-delay: .15s; } .d3 { transition-delay: .25s; }
         .d4 { transition-delay: .35s; } .d5 { transition-delay: .45s; }
 
-        /* ── SECTION ── */
+        /* SECTION */
         .section { padding: 100px 0; position: relative; z-index: 2; }
         .sec-tag { text-align: center; font-size: 10px; font-weight: 600; letter-spacing: 4px;
           text-transform: uppercase; color: rgba(195,7,63,.65); margin-bottom: 56px;
@@ -220,7 +213,7 @@ export default function Home() {
         .sec-tag::before { background: linear-gradient(90deg, transparent, rgba(195,7,63,.3)); }
         .sec-tag::after { background: linear-gradient(90deg, rgba(195,7,63,.3), transparent); }
 
-        /* ── STEPS ── */
+        /* STEPS */
         .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
         .step { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.065);
           border-radius: 24px; padding: 36px 28px; position: relative; overflow: hidden;
@@ -234,7 +227,7 @@ export default function Home() {
         .step-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
         .step-desc { font-size: 13px; color: rgba(255,255,255,.36); line-height: 1.75; font-weight: 300; }
 
-        /* ── FEATS ── */
+        /* FEATS */
         .feats { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
         .feat { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.055);
           border-radius: 22px; padding: 28px; display: flex; gap: 20px; align-items: flex-start;
@@ -246,7 +239,7 @@ export default function Home() {
         .feat-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
         .feat-text { font-size: 13px; color: rgba(255,255,255,.34); line-height: 1.75; font-weight: 300; }
 
-        /* ── WHO ── */
+        /* WHO */
         .who-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
         .who-card { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.065);
           border-radius: 20px; padding: 28px 16px; text-align: center;
@@ -255,7 +248,7 @@ export default function Home() {
         .who-emoji { font-size: 34px; display: block; margin-bottom: 12px; }
         .who-label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); letter-spacing: 0.5px; }
 
-        /* ── ONBOARDING SLIDER ── */
+        /* ONBOARDING */
         .onb-wrap { max-width: 420px; margin: 0 auto; }
         .onb-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07);
           border-radius: 28px; padding: 44px 36px 36px; text-align: center; position: relative; overflow: hidden; }
@@ -269,68 +262,63 @@ export default function Home() {
           background: rgba(195,7,63,.09); border: 1px solid rgba(195,7,63,.22);
           display: flex; align-items: center; justify-content: center; margin: 0 auto 28px; position: relative; z-index: 1; }
         .onb-step-label { font-size: 10px; font-weight: 700; letter-spacing: 3.5px;
-          text-transform: uppercase; color: rgba(195,7,63,.65); margin-bottom: 12px; position: relative; z-index: 1; }
-        .onb-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
-          margin-bottom: 14px; line-height: 1.3; letter-spacing: -.3px; position: relative; z-index: 1; }
-        .onb-desc { font-size: 14px; color: rgba(255,255,255,.38); line-height: 1.75; font-weight: 300;
-          margin-bottom: 32px; position: relative; z-index: 1; }
+          color: rgba(195,7,63,.6); text-transform: uppercase; margin-bottom: 14px; position: relative; z-index: 1; }
+        .onb-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800;
+          letter-spacing: -.4px; margin-bottom: 14px; position: relative; z-index: 1; }
+        .onb-desc { font-size: 13px; color: rgba(255,255,255,.38); line-height: 1.8;
+          font-weight: 300; margin-bottom: 32px; position: relative; z-index: 1; }
         .onb-actions { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
-        .onb-btn-main { width: 100%; background: #C3073F; color: #fff; border: none; border-radius: 14px;
-          padding: 15px; font-size: 14px; font-family: 'Onest', sans-serif; font-weight: 700; cursor: pointer;
-          box-shadow: 0 4px 24px rgba(195,7,63,.35); transition: opacity .15s, transform .15s; }
-        .onb-btn-main:hover { opacity: .88; transform: translateY(-1px); }
-        .onb-skip { font-size: 12px; color: rgba(255,255,255,.2); cursor: pointer; background: none; border: none;
-          font-family: 'Onest', sans-serif; transition: color .2s; padding: 4px; }
-        .onb-skip:hover { color: rgba(255,255,255,.4); }
-        .onb-nav { display: flex; gap: 8px; justify-content: center; margin-top: 24px; }
-        .onb-nav-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.05);
-          border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.5); cursor: pointer;
-          font-size: 16px; display: flex; align-items: center; justify-content: center;
-          transition: background .2s, color .2s, border-color .2s; }
-        .onb-nav-btn:hover:not(:disabled) { background: rgba(195,7,63,.15); border-color: rgba(195,7,63,.3); color: #fff; }
-        .onb-nav-btn:disabled { opacity: .25; cursor: default; }
-        .onb-counter { font-size: 12px; color: rgba(255,255,255,.2); font-weight: 300; display: flex; align-items: center; padding: 0 4px; }
+        .onb-btn-main { background: #C3073F; color: #fff; border: none; border-radius: 12px;
+          padding: 14px 28px; font-size: 14px; font-weight: 600; font-family: 'Onest', sans-serif; cursor: pointer;
+          transition: transform .15s, box-shadow .15s; box-shadow: 0 4px 20px rgba(195,7,63,.35); }
+        .onb-btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(195,7,63,.5); }
+        .onb-skip { background: none; border: none; color: rgba(255,255,255,.22); font-size: 12px;
+          font-family: 'Onest', sans-serif; cursor: pointer; transition: color .2s; padding: 4px; }
+        .onb-skip:hover { color: rgba(255,255,255,.5); }
+        .onb-nav { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 20px; }
+        .onb-nav-btn { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+          color: rgba(255,255,255,.4); border-radius: 10px; width: 40px; height: 40px; cursor: pointer;
+          font-size: 16px; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+        .onb-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,.08); color: #fff; }
+        .onb-nav-btn:disabled { opacity: .3; cursor: default; }
+        .onb-counter { font-size: 12px; color: rgba(255,255,255,.25); font-family: 'Syne', sans-serif; font-weight: 700; }
+        @keyframes onbIn { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+        .onb-content { animation: onbIn .35s ease both; }
 
-        /* step content fade */
-        .onb-content { animation: fadeSlide .35s ease both; }
-        @keyframes fadeSlide { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+        /* PRICING */
+        .price-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        .price-card { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.07);
+          border-radius: 28px; padding: 36px 28px; position: relative; overflow: hidden;
+          transition: border-color .3s, transform .25s; display: flex; flex-direction: column; }
+        .price-card:hover { border-color: rgba(195,7,63,.25); transform: translateY(-4px); }
+        .price-card.hot { border-color: rgba(195,7,63,.35); background: rgba(195,7,63,.04); }
+        .price-badge { position: absolute; top: 20px; right: 20px;
+          background: #C3073F; color: #fff; font-size: 10px; font-weight: 700;
+          padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px; }
+        .price-tier { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+          color: rgba(255,255,255,.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+        .price-amount { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800;
+          letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+        .price-amount sup { font-size: 20px; vertical-align: super; letter-spacing: 0; margin-right: 2px; color: #C3073F; }
+        .price-note { font-size: 12px; color: rgba(255,255,255,.25); margin-bottom: 24px; font-weight: 300; }
+        .price-sep { height: 1px; background: rgba(255,255,255,.06); margin-bottom: 24px; }
+        .price-list { list-style: none; display: flex; flex-direction: column; gap: 10px; flex: 1; margin-bottom: 28px; }
+        .price-list li { display: flex; align-items: center; gap: 10px;
+          font-size: 13px; color: rgba(255,255,255,.55); font-weight: 300; }
+        .price-check { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%;
+          background: rgba(195,7,63,.12); border: 1px solid rgba(195,7,63,.25);
+          display: flex; align-items: center; justify-content: center; }
+        .price-btn { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+          color: #fff; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 600;
+          font-family: 'Onest', sans-serif; cursor: pointer; transition: all .2s; }
+        .price-btn:hover { background: #C3073F; border-color: #C3073F; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(195,7,63,.4); }
+        .price-card.hot .price-btn { background: #C3073F; border-color: #C3073F; box-shadow: 0 4px 24px rgba(195,7,63,.4); }
+        .price-card.hot .price-btn:hover { box-shadow: 0 8px 36px rgba(195,7,63,.6); }
 
-        /* ── RED LINE ── */
-        .red-line { height: 1px; background: linear-gradient(90deg,transparent,rgba(195,7,63,.22),transparent);
-          position: relative; z-index: 2; }
-
-        /* ── PRICING ── */
-        .price-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
-        .price-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.065);
-          border-radius: 24px; padding: 32px 26px; position: relative; transition: transform .25s, border-color .3s; }
-        .price-card:hover { transform: translateY(-4px); }
-        .price-card.hot { border-color: rgba(195,7,63,.45); background: rgba(195,7,63,.05);
-          box-shadow: 0 0 60px rgba(195,7,63,.08), inset 0 1px 0 rgba(255,255,255,.06); transform: scale(1.02); }
-        .price-card.hot:hover { transform: scale(1.02) translateY(-4px); }
-        .price-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-          background: #C3073F; color: #fff; font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700;
-          padding: 4px 18px; border-radius: 100px; box-shadow: 0 4px 16px rgba(195,7,63,.4); white-space: nowrap; }
-        .price-tier { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
-          color: rgba(255,255,255,.28); margin-bottom: 18px; font-family: 'Syne', sans-serif; }
-        .price-amount { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800;
-          letter-spacing: -2px; margin-bottom: 4px; }
-        .price-amount sup { font-size: 18px; vertical-align: top; margin-top: 12px; display: inline-block; font-weight: 400; }
-        .price-note { font-size: 12px; color: rgba(255,255,255,.28); margin-bottom: 24px; font-weight: 300; }
-        .price-sep { height: 1px; background: rgba(255,255,255,.065); margin-bottom: 20px; }
-        .price-list { list-style: none; margin-bottom: 28px; }
-        .price-list li { font-size: 13px; color: rgba(255,255,255,.48); font-weight: 300;
-          padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.04); display: flex; align-items: center; gap: 10px; }
-        .price-check { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-          background: rgba(195,7,63,.14); display: flex; align-items: center; justify-content: center; }
-        .price-btn { width: 100%; padding: 13px; border-radius: 12px; font-size: 14px; font-weight: 700;
-          font-family: 'Onest', sans-serif; cursor: pointer; transition: opacity .15s, transform .15s;
-          background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.09); color: rgba(255,255,255,.7); }
-        .price-card.hot .price-btn { background: #C3073F; color: #fff; border: none; box-shadow: 0 4px 20px rgba(195,7,63,.35); }
-        .price-btn:hover { opacity: .85; transform: translateY(-1px); }
-
-        /* ── CTA ── */
-        .cta-box { max-width: 600px; margin: 0 auto; background: rgba(195,7,63,.045);
-          border: 1px solid rgba(195,7,63,.14); border-radius: 32px; padding: 64px 52px;
+        /* CTA */
+        .red-line { height: 1px; background: linear-gradient(90deg,transparent,rgba(195,7,63,.25),transparent); position: relative; z-index: 2; }
+        .cta-box { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.07);
+          border-radius: 32px; padding: 64px 48px;
           position: relative; overflow: hidden; text-align: center; }
         .cta-box::before { content: ''; position: absolute; inset: 0;
           background: radial-gradient(ellipse at 50% -10%,rgba(195,7,63,.22),transparent 60%); pointer-events: none; }
@@ -354,7 +342,7 @@ export default function Home() {
           padding: 40px 0; position: relative; z-index: 1; line-height: 1.5; }
         .cta-success span { color: #C3073F; }
 
-        /* ── FOOTER ── */
+        /* FOOTER */
         .footer { position: relative; z-index: 2; padding: 28px 40px;
           border-top: 1px solid rgba(255,255,255,.045); display: flex; align-items: center; justify-content: space-between; }
         .footer-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: rgba(255,255,255,.22); }
@@ -363,7 +351,7 @@ export default function Home() {
 
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
 
-        /* ── MOBILE ── */
+        /* MOBILE */
         @media (max-width: 768px) {
           .wrap { padding: 0 20px; } .nav { padding: 0 20px; }
           .hero { padding: 100px 20px 60px; }
@@ -391,8 +379,8 @@ export default function Home() {
       <nav className="nav">
         <a href="/" className="nav-logo">tusi<em>&apos;</em>m</a>
         <div className="nav-right">
-          <button className="nav-login">Войти</button>
-          <button className="nav-cta">Создать альбом →</button>
+          <button className="nav-login" onClick={() => go('/organizer')}>Войти</button>
+          <button className="nav-cta" onClick={() => go('/organizer/create')}>Создать альбом →</button>
         </div>
       </nav>
 
@@ -405,12 +393,12 @@ export default function Home() {
           <span className="line3">без приложений.</span>
         </h1>
         <p className="hero-sub">
-          Расставьте QR-коды по залу — гости снимают через браузер, 
+          Расставьте QR-коды по залу — гости снимают через браузер,
           всё собирается в один живой альбом прямо на вашем событии.
         </p>
         <div className="hero-btns">
-          <button className="btn-red">Создать событие</button>
-          <button className="btn-ghost">Как это работает →</button>
+          <button className="btn-red" onClick={() => go('/organizer/create')}>Создать событие</button>
+          <button className="btn-ghost" onClick={() => document.querySelector('.section')?.scrollIntoView({behavior:'smooth'})}>Как это работает →</button>
         </div>
         <div className="stats" ref={statsRef}>
           <div className="stat">
@@ -495,29 +483,20 @@ export default function Home() {
 
       <div className="red-line" />
 
-      {/* ЧТО ВИДЯТ ГОСТИ — СЛАЙДЕР */}
+      {/* ЧТО ВИДЯТ ГОСТИ */}
       <section className="section">
         <div className="wrap">
           <div className="sec-tag reveal">Что видят ваши гости</div>
           <div className="onb-wrap reveal">
             <div className="onb-card">
-              {/* Progress pips */}
               <div className="onb-progress">
                 {onbSteps.map((_,i) => (
-                  <div
-                    key={i}
-                    className={`onb-pip ${i === onbStep ? 'onb-pip-on' : 'onb-pip-off'}`}
-                    onClick={() => setOnbStep(i)}
-                    style={{cursor:'pointer'}}
-                  />
+                  <div key={i} className={`onb-pip ${i === onbStep ? 'onb-pip-on' : 'onb-pip-off'}`}
+                    onClick={() => setOnbStep(i)} style={{cursor:'pointer'}} />
                 ))}
               </div>
-
-              {/* Content with re-mount animation */}
               <div className="onb-content" key={onbStep}>
-                <div className="onb-icon-wrap">
-                  {onbSteps[onbStep].svg}
-                </div>
+                <div className="onb-icon-wrap">{onbSteps[onbStep].svg}</div>
                 <div className="onb-step-label">ШАГ {onbSteps[onbStep].step}</div>
                 <div className="onb-title">{onbSteps[onbStep].title}</div>
                 <div className="onb-desc">{onbSteps[onbStep].desc}</div>
@@ -531,8 +510,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* Nav arrows */}
             <div className="onb-nav">
               <button className="onb-nav-btn" onClick={() => setOnbStep(s => Math.max(s-1,0))} disabled={onbStep === 0}>←</button>
               <span className="onb-counter">{onbStep + 1} / {onbSteps.length}</span>
@@ -550,9 +527,9 @@ export default function Home() {
           <div className="sec-tag reveal">Тарифы</div>
           <div className="price-grid">
             {[
-              {name:'Старт',price:'990',features:['До 50 гостей','5 фото на гостя','Альбом 7 дней','QR-код'],hot:false},
-              {name:'Праздник',price:'1 990',features:['До 150 гостей','10 фото на гостя','Альбом 30 дней','Свайп-голосование','Живое слайд-шоу'],hot:true},
-              {name:'Про',price:'3 490',features:['Безлимит гостей','20 фото на гостя','Альбом 90 дней','Скачать ZIP-архив','Приоритетная поддержка'],hot:false},
+              {name:'Тусовка',price:'299',features:['До 15 гостей','10 фото на гостя','Без watermark','Скачать ZIP'],hot:false},
+              {name:'Стандарт',price:'799',features:['До 30 гостей','20 фото на гостя','Статистика события','Скачать ZIP'],hot:true},
+              {name:'Ультра',price:'2 990',features:['До 150 гостей','30 фото на гостя','Обложка события','Слайдшоу на экран'],hot:false},
             ].map((p,i) => (
               <div key={p.name} className={`price-card${p.hot?' hot':''} reveal d${i+1}`}>
                 {p.hot&&<div className="price-badge">Популярный</div>}
@@ -563,7 +540,7 @@ export default function Home() {
                 <ul className="price-list">
                   {p.features.map(f=><li key={f}><span className="price-check">{checkSvg}</span>{f}</li>)}
                 </ul>
-                <button className="price-btn">Выбрать</button>
+                <button className="price-btn" onClick={() => go('/organizer/create')}>Выбрать</button>
               </div>
             ))}
           </div>
