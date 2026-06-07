@@ -21,6 +21,8 @@ function useCounter(target, duration = 1800, start = false) {
 export default function Home() {
   const [formData, setFormData] = useState({ name: '', contact: '', type: '' })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
   const [onbStep, setOnbStep] = useState(0)
   const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef(null)
@@ -46,7 +48,30 @@ export default function Home() {
     return () => { observer.disconnect(); statsObs.disconnect() }
   }, [])
 
-  const handleSubmit = (e) => { e.preventDefault(); setSubmitted(true) }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (submitting) return
+    setFormError('')
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          contact: formData.contact.trim(),
+          type: formData.type.trim(),
+          source: 'landing',
+        }),
+      })
+      if (!res.ok) throw new Error('bad status')
+      setSubmitted(true)
+    } catch (err) {
+      setFormError('Не удалось отправить. Попробуйте ещё раз или напишите нам в Telegram.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
   const go = (path) => { window.location.href = path }
 
   const onbSteps = [
@@ -595,8 +620,11 @@ export default function Home() {
                   <input className="cta-input" placeholder="Ваше имя" value={formData.name} onChange={e=>setFormData({...formData,name:e.target.value})} required/>
                   <input className="cta-input" placeholder="Email или Telegram" value={formData.contact} onChange={e=>setFormData({...formData,contact:e.target.value})} required/>
                   <input className="cta-input" placeholder="Тип события (свадьба, корпоратив...)" value={formData.type} onChange={e=>setFormData({...formData,type:e.target.value})}/>
-                  <button type="submit" className="cta-submit">Оставить заявку →</button>
-                  <p className="cta-note">Без спама. Только по делу.</p>
+                  <button type="submit" className="cta-submit" disabled={submitting}>
+                    {submitting ? 'Отправляем…' : 'Оставить заявку →'}
+                  </button>
+                  {formError && <p className="cta-note" style={{ color:'#C3073F' }}>{formError}</p>}
+                  {!formError && <p className="cta-note">Без спама. Только по делу.</p>}
                 </form>
               </>
             )}
