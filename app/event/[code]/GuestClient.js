@@ -195,6 +195,8 @@ export default function GuestClient({ event }) {
   const [flashActive, setFlashActive]     = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
   const [eventStatus, setEventStatus]     = useState(event.status)
+  const [reviewPhoto, setReviewPhoto]     = useState(null)
+  const [gridOn, setGridOn]               = useState(false)
 
   const videoRef  = useRef(null)
   const streamRef = useRef(null)
@@ -308,9 +310,11 @@ export default function GuestClient({ event }) {
     setFacingMode(nm); setFlashOn(false); await startStream(nm)
   }
 
-  async function takePhoto() {
+  // Снимок: захватываем кадр и показываем экран подтверждения — кадр пока НЕ списан.
+  function takePhoto() {
     const video = videoRef.current; if (!video) return
     playShutter()
+    try { navigator.vibrate?.(40) } catch {}
     setFlashActive(true); setTimeout(() => setFlashActive(false), 400)
     const maxSize = 1200
     const scale = Math.min(maxSize/video.videoWidth, maxSize/video.videoHeight, 1)
@@ -320,23 +324,54 @@ export default function GuestClient({ event }) {
     const ctx = canvas.getContext('2d')
     if (facingMode==='user') { ctx.translate(w,0); ctx.scale(-1,1) }
     ctx.drawImage(video, 0, 0, w, h)
-    closeCamera(); setUploading(true)
-    canvas.toBlob(async (blob) => {
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      setReviewPhoto({ url, blob })
+      closeCamera()
+    }, 'image/jpeg', 0.82)
+  }
+
+  // «Переснять» — выкидываем превью, снова открываем камеру. Кадр не потрачен.
+  function retakePhoto() {
+    if (reviewPhoto?.url) URL.revokeObjectURL(reviewPhoto.url)
+    setReviewPhoto(null)
+    openCamera()
+  }
+
+  // «Оставить» — оптимистично показываем фото сразу, аплоад идёт фоном.
+  async function keepPhoto() {
+    const rp = reviewPhoto; if (!rp) return
+    try { navigator.vibrate?.(20) } catch {}
+    setReviewPhoto(null)
+    const tempId = 'temp-' + Date.now()
+    setPhotos(prev => [{ id: tempId, url: rp.url, mine: true, _pending: true }, ...prev])
+    setTotalPhotos(p => p + 1)
+    setShowSuccess(true); setTimeout(() => setShowSuccess(false), 1800)
+    if (used + 1 >= limit) setTimeout(() => setShowConfetti(true), 400)
+    try {
       const form = new FormData()
-      form.append('file', blob, 'photo.jpg')
+      form.append('file', rp.blob, 'photo.jpg')
       form.append('event_id', event.id)
       form.append('device_id', deviceId)
       form.append('author', author)
       const res = await fetch('/api/upload', { method:'POST', body:form })
-      const { photo, error } = await res.json()
+      const { photo } = await res.json()
       if (photo) {
-        setPhotos(prev => [{ ...photo, mine:true }, ...prev])
-        setTotalPhotos(p => p+1)
-        setShowSuccess(true); setTimeout(() => setShowSuccess(false), 1800)
-        if (myPhotos.length + 1 >= limit) setTimeout(() => setShowConfetti(true), 400)
+        setPhotos(prev => prev.map(p => p.id === tempId ? { ...photo, mine:true } : p))
+        URL.revokeObjectURL(rp.url)
+      } else {
+        setPhotos(prev => prev.filter(p => p.id !== tempId))
+        setTotalPhotos(p => Math.max(0, p - 1))
+        URL.revokeObjectURL(rp.url)
+        alert('Не удалось загрузить фото. Попробуй ещё раз.')
       }
-      setUploading(false)
-    }, 'image/jpeg', 0.82)
+    } catch {
+      setPhotos(prev => prev.filter(p => p.id !== tempId))
+      setTotalPhotos(p => Math.max(0, p - 1))
+      URL.revokeObjectURL(rp.url)
+      alert('Не удалось загрузить фото. Проверь интернет.')
+    }
   }
 
   async function deletePhoto(photoId) {
@@ -547,14 +582,16 @@ export default function GuestClient({ event }) {
           ))}
         </div>
 
-        {/* Прогресс */}
+        {/* Остаток кадров точками */}
         <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:14, padding:'13px 18px', marginBottom:18, animation:'fadeUp 0.5s 0.1s cubic-bezier(.22,1,.36,1) both' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'rgba(255,255,255,0.25)', marginBottom:8 }}>
-            <span>Использовано: <span style={{ color:'rgba(255,255,255,0.5)' }}>{used}</span></span>
-            <span>Лимит: <span style={{ color:'rgba(255,255,255,0.5)' }}>{limit}</span></span>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'rgba(255,255,255,0.25)', marginBottom:10 }}>
+            <span style={{ textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:700 }}>Кадры</span>
+            <span>осталось <span style={{ color: remaining<=5 ? '#C3073F' : 'rgba(255,255,255,0.6)', fontWeight:700 }}>{remaining}</span> из {limit}</span>
           </div>
-          <div style={{ background:'rgba(255,255,255,0.05)', borderRadius:100, height:4, overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:100, background:progress>80?'linear-gradient(90deg,#950740,#C3073F)':'linear-gradient(90deg,#6F2232,#C3073F)', width:`${progress}%`, transition:'width 0.5s cubic-bezier(.22,1,.36,1)' }}/>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {Array.from({ length: limit }).map((_, i) => (
+              <span key={i} style={{ width:10, height:10, borderRadius:'50%', background: i < used ? '#C3073F' : 'rgba(255,255,255,0.1)', boxShadow: i < used ? '0 0 6px rgba(195,7,63,0.5)' : 'none', transition:'background 0.3s, box-shadow 0.3s' }}/>
+            ))}
           </div>
         </div>
 
@@ -593,7 +630,12 @@ export default function GuestClient({ event }) {
                   style={{ opacity:deletingId===photo.id?0.4:1, transition:'opacity 0.2s' }}
                   onClick={() => openLightbox(photo, i)}>
                   <img src={photo.url} loading="lazy" className="photo-thumb"/>
-                  {!isEventClosed && (
+                  {photo._pending && (
+                    <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <div style={{ width:18, height:18, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', animation:'spin 0.8s linear infinite' }}/>
+                    </div>
+                  )}
+                  {!isEventClosed && !photo._pending && (
                     <button className="delete-btn" disabled={!!deletingId}
                       onClick={e => { e.stopPropagation(); setDeleteConfirm(photo.id) }}>✕</button>
                   )}
@@ -652,13 +694,41 @@ export default function GuestClient({ event }) {
         </div>
       )}
 
+      {/* Экран подтверждения кадра — до списания */}
+      {reviewPhoto && (
+        <div style={{ position:'fixed', inset:0, background:'#000', zIndex:2100, animation:'fadeIn 0.2s ease' }}>
+          <img src={reviewPhoto.url} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }}/>
+          <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:5, paddingTop:'max(52px,env(safe-area-inset-top,52px))', paddingLeft:24, paddingRight:24, paddingBottom:28, background:'linear-gradient(to bottom,rgba(0,0,0,0.75),transparent)', textAlign:'center' }}>
+            <div style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:20, color:'#fff', letterSpacing:'-0.5px' }}>Оставить кадр?</div>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', marginTop:5 }}>
+              Останется <span style={{ color:'#fff', fontWeight:700 }}>{Math.max(0, remaining-1)}</span> из {limit} · выбирай лучшее
+            </div>
+          </div>
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:5, paddingBottom:'max(32px,env(safe-area-inset-bottom,32px))', paddingLeft:24, paddingRight:24, paddingTop:48, background:'linear-gradient(to top,rgba(0,0,0,0.85),transparent)', display:'flex', flexDirection:'column', gap:12 }}>
+            <button className="shoot-btn" style={{ width:'100%' }} onClick={keepPhoto}>✓ Оставить</button>
+            <button onClick={retakePhoto} style={{ width:'100%', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', color:'#fff', borderRadius:100, padding:16, fontSize:15, fontWeight:600, fontFamily:"'Onest',sans-serif", cursor:'pointer', backdropFilter:'blur(8px)', WebkitTapHighlightColor:'transparent' }}>↻ Переснять</button>
+          </div>
+        </div>
+      )}
+
       {/* Камера */}
       {cameraOpen && (
         <div style={{ position:'fixed', inset:0, background:'#000', zIndex:2000, animation:'fadeIn 0.2s ease' }}>
           {flashActive && <div style={{ position:'absolute', inset:0, background:'#fff', zIndex:10, pointerEvents:'none', animation:'flashWhite 0.4s ease forwards' }}/>}
           <video ref={videoRef} autoPlay playsInline muted style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transform:facingMode==='user'?'scaleX(-1)':'none' }}/>
+          {gridOn && (
+            <div style={{ position:'absolute', inset:0, zIndex:4, pointerEvents:'none' }}>
+              <div style={{ position:'absolute', left:'33.33%', top:0, bottom:0, width:1, background:'rgba(255,255,255,0.22)' }}/>
+              <div style={{ position:'absolute', left:'66.66%', top:0, bottom:0, width:1, background:'rgba(255,255,255,0.22)' }}/>
+              <div style={{ position:'absolute', top:'33.33%', left:0, right:0, height:1, background:'rgba(255,255,255,0.22)' }}/>
+              <div style={{ position:'absolute', top:'66.66%', left:0, right:0, height:1, background:'rgba(255,255,255,0.22)' }}/>
+            </div>
+          )}
           <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:5, paddingTop:'max(52px,env(safe-area-inset-top,52px))', paddingLeft:24, paddingRight:24, paddingBottom:20, background:'linear-gradient(to bottom,rgba(0,0,0,0.7),transparent)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <button className={`cam-btn${flashOn?' active':''}`} onClick={toggleFlash} style={{ opacity:torchSupported?1:0.3 }}>⚡</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button className={`cam-btn${flashOn?' active':''}`} onClick={toggleFlash} style={{ opacity:torchSupported?1:0.3 }}>⚡</button>
+              <button className={`cam-btn${gridOn?' active':''}`} onClick={() => setGridOn(g => !g)}>▦</button>
+            </div>
             <div style={{ background:'rgba(0,0,0,0.6)', borderRadius:100, padding:'7px 18px', fontSize:13, color:'#fff', fontFamily:"'Unbounded',sans-serif", fontWeight:900, backdropFilter:'blur(8px)', letterSpacing:'-0.3px' }}>
               {remaining} кадров
             </div>
