@@ -30,11 +30,10 @@ export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('organizer_token')
-    if (!token) { router.replace('/organizer'); return }
-    const org = JSON.parse(localStorage.getItem('organizer') || '{}')
-    setOrganizer(org)
-    loadEvents()
+    fetch('/api/me')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('unauthorized')))
+      .then(d => { setOrganizer(d.organizer || {}); loadEvents() })
+      .catch(() => router.replace('/organizer'))
   }, [])
 
   async function loadEvents() {
@@ -49,9 +48,8 @@ export default function Dashboard() {
     setLoading(false)
   }
 
-  function logout() {
-    localStorage.removeItem('organizer_token')
-    localStorage.removeItem('organizer')
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' }).catch(() => {})
     router.push('/organizer')
   }
 

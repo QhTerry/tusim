@@ -79,8 +79,9 @@ export default function EventManage() {
   const pct = event?.guest_limit ? Math.min(100, Math.round(guestCount / event.guest_limit * 100)) : 0
 
   useEffect(() => {
-    if (!localStorage.getItem('organizer_token')) { router.replace('/organizer'); return }
-    loadEvent()
+    fetch('/api/me')
+      .then(r => r.ok ? loadEvent() : router.replace('/organizer'))
+      .catch(() => router.replace('/organizer'))
   }, [eventId])
 
   useEffect(() => {

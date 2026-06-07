@@ -29,7 +29,7 @@ export default function CreateEvent() {
   const [payMethod, setPayMethod] = useState('card')
 
   useEffect(() => {
-    if (!localStorage.getItem('organizer_token')) router.replace('/organizer')
+    fetch('/api/me').then(r => { if (!r.ok) router.replace('/organizer') }).catch(() => router.replace('/organizer'))
   }, [])
 
   const selectedPlan = PLANS.find(p => p.id === plan)
