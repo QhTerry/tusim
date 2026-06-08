@@ -213,7 +213,7 @@ export default function Home() {
         .nav-login:hover { color: #fff; background: rgba(255,255,255,0.05); }
         .nav-cta {
           font-size: 13px; font-weight: 600; font-family: 'Onest', sans-serif; color: #fff;
-          background: #C3073F; border: none; border-radius: 10px; padding: 9px 20px;
+          background: linear-gradient(120deg,#E11D54,#7C5CFF); border: none; border-radius: 12px; padding: 9px 20px;
           cursor: pointer; box-shadow: 0 0 20px rgba(195,7,63,0.3);
           transition: transform .15s, box-shadow .15s;
         }
@@ -240,7 +240,7 @@ export default function Home() {
           font-weight: 900; line-height: 1.08; letter-spacing: -2px;
           max-width: 820px; margin-bottom: 28px; animation: fadeUp .7s .1s ease both;
         }
-        .line2 { color: #C3073F; display: block; }
+        .line2 { background: linear-gradient(115deg,#FF4D7D 0%,#E11D54 45%,#7C5CFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; display: block; filter: drop-shadow(0 4px 24px rgba(124,92,255,.25)); }
         .line3 { color: rgba(255,255,255,.15); font-weight: 700; display: block; font-style: italic; }
         .hero-sub {
           font-size: 16px; line-height: 1.8; font-weight: 300; color: rgba(255,255,255,.38);
@@ -252,13 +252,14 @@ export default function Home() {
         }
 
         .btn-red {
-          background: #C3073F; color: #fff; border: none; border-radius: 14px;
+          background: linear-gradient(120deg,#E11D54,#7C5CFF); background-size: 160% 160%; color: #fff; border: none; border-radius: 16px;
           padding: 16px 36px; font-size: 15px; font-weight: 600;
           font-family: 'Onest', sans-serif; cursor: pointer;
-          box-shadow: 0 4px 28px rgba(195,7,63,.45);
-          transition: transform .15s, box-shadow .15s;
+          box-shadow: 0 8px 32px rgba(225,29,84,.4);
+          transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
         }
-        .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 44px rgba(195,7,63,.6); }
+        .btn-red:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 14px 48px rgba(124,92,255,.5); animation: heroGrad 3s ease infinite; }
+        @keyframes heroGrad { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
         .btn-ghost {
           background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
           color: rgba(255,255,255,.55); border-radius: 14px; padding: 16px 30px;

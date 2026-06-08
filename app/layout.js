@@ -1,5 +1,6 @@
 import './globals.css'
 import Toaster from './ui/Toaster'
+import ThemeToggle from './ui/ThemeToggle'
 
 export const metadata = {
   title: "tusi'm",
@@ -10,18 +11,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('tusim-theme');if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();` }} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#09090b" />
+        <meta name="theme-color" content="#0a0a0d" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body style={{ margin:0, padding:0, background:'#09090b', overflowX:'hidden' }}>
+      <body style={{ margin:0, padding:0, overflowX:'hidden' }}>
         {children}
         <BottomNavWrapper />
         <Toaster />
+        <ThemeToggle floating />
       </body>
     </html>
   )
