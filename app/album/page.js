@@ -124,7 +124,11 @@ function AlbumInner() {
       ...prev,
       [photoId]: { ...(prev[photoId]||{}), [reactionKey]: ((prev[photoId]||{})[reactionKey]||0) + 1 }
     }))
-    await supabase.from('reactions').insert({ photo_id:photoId, event_id:eventId, device_id:deviceId.current, reaction_key:reactionKey })
+    await fetch('/api/react', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photo_id: photoId, event_id: eventId, device_id: deviceId.current, reaction_key: reactionKey }),
+    }).catch(() => {})
   }
 
   const totalReactions = (photoId) => Object.values(reactions[photoId]||{}).reduce((s,v)=>s+v,0)

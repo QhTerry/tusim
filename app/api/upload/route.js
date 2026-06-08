@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request) {
+  const supabase = supabaseAdmin()
   const formData = await request.formData()
   const file = formData.get('file')
   const eventId = formData.get('event_id')

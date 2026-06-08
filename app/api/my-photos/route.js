@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function GET(request) {
+  const supabase = supabaseAdmin()
   const { searchParams } = new URL(request.url)
   const event_id = searchParams.get('event_id')
   const device_id = searchParams.get('device_id')

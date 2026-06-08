@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function DELETE(request) {
+  const supabase = supabaseAdmin()
   const { searchParams } = new URL(request.url)
   const photo_id  = searchParams.get('photo_id')
   const device_id = searchParams.get('device_id')

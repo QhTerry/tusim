@@ -109,23 +109,34 @@ export default function EventManage() {
     if (data) setPhotos(data)
   }
 
+  async function eventAction(payload) {
+    const res = await fetch('/api/organizer/event-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_id: eventId, ...payload }),
+    })
+    if (res.status === 401) { router.replace('/organizer'); return { ok: false } }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) { alert(data.error || 'Не удалось выполнить действие'); return { ok: false } }
+    return { ok: true, ...data }
+  }
+
   async function closeEvent() {
     if (closing) return
     setClosing(true)
-    await supabase.from('events').update({ status: 'closed' }).eq('id', eventId)
-    setEvent(prev => ({ ...prev, status: 'closed' }))
+    const r = await eventAction({ action: 'close' })
+    if (r.ok) setEvent(prev => ({ ...prev, status: 'closed' }))
     setClosing(false)
   }
 
   async function reopenEvent(extraMinutes = 120) {
-    const base = event.ends_at && new Date(event.ends_at) > new Date() ? new Date(event.ends_at) : new Date()
-    const newEnd = new Date(base.getTime() + extraMinutes * 60000).toISOString()
-    await supabase.from('events').update({ status: 'active', ends_at: newEnd }).eq('id', eventId)
-    setEvent(prev => ({ ...prev, status: 'active', ends_at: newEnd }))
+    const r = await eventAction({ action: 'reopen', extra_minutes: extraMinutes })
+    if (r.ok) setEvent(prev => ({ ...prev, status: 'active', ends_at: r.ends_at }))
   }
 
   async function deletePhoto(photoId) {
-    await supabase.from('photos').delete().eq('id', photoId)
+    const r = await eventAction({ action: 'delete_photo', photo_id: photoId })
+    if (!r.ok) return
     setPhotos(prev => prev.filter(p => p.id !== photoId))
     if (lightbox?.id === photoId) setLightbox(null)
   }

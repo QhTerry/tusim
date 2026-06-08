@@ -157,6 +157,37 @@ export default function Home() {
         .blob-2 { width: 450px; height: 450px; background: rgba(195,7,63,0.05); top: 45vh; right: -180px; animation-delay: -8s; }
         .blob-3 { width: 550px; height: 550px; background: rgba(195,7,63,0.03); bottom: -120px; left: 25%; animation-delay: -15s; }
         @keyframes drift { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(35px,-45px) scale(1.06);} 66%{transform:translate(-25px,35px) scale(0.96);} }
+        .blob { will-change: transform; }
+
+        /* Аврора — мягкое дышащее свечение сверху */
+        .aurora {
+          position: fixed; inset: 0; pointer-events: none; z-index: 0;
+          background: radial-gradient(ellipse 70% 55% at 50% -5%, rgba(195,7,63,0.14), transparent 60%);
+          animation: breathe 13s ease-in-out infinite; will-change: opacity, transform;
+        }
+        @keyframes breathe { 0%,100%{opacity:.55;transform:scale(1);} 50%{opacity:1;transform:scale(1.07);} }
+
+        /* Плёночное зерно — премиальная текстура тёмного фона */
+        .grain {
+          position: fixed; top:-20%; left:-20%; width:140%; height:140%;
+          pointer-events: none; z-index: 1; opacity: 0.05; mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          animation: grainShift 8s steps(6) infinite; will-change: transform;
+        }
+        @keyframes grainShift {
+          0%{transform:translate(0,0);} 20%{transform:translate(-2%,1%);} 40%{transform:translate(1%,-2%);}
+          60%{transform:translate(-1%,-1%);} 80%{transform:translate(2%,1%);} 100%{transform:translate(0,0);}
+        }
+
+        /* Виньетка — фокус на центр */
+        .vignette {
+          position: fixed; inset: 0; pointer-events: none; z-index: 1;
+          background: radial-gradient(ellipse 90% 80% at 50% 45%, transparent 55%, rgba(0,0,0,0.5) 100%);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .blob, .aurora, .grain, .pulse-dot { animation: none !important; }
+        }
 
         .wrap { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; padding: 0 40px; }
 
@@ -439,9 +470,12 @@ export default function Home() {
         }
       `}</style>
 
+      <div className="aurora"/>
       <div className="blob-wrap">
         <div className="blob blob-1"/><div className="blob blob-2"/><div className="blob blob-3"/>
       </div>
+      <div className="grain"/>
+      <div className="vignette"/>
 
       <nav className="nav">
         <a href="/" className="nav-logo">tusi<span>'m</span></a>

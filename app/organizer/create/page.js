@@ -34,9 +34,28 @@ export default function CreateEvent() {
 
   const selectedPlan = PLANS.find(p => p.id === plan)
 
-  function handleCreate() {
+  async function handleCreate() {
+    if (loading) return
     setLoading(true)
-    setTimeout(() => router.push('/organizer/dashboard'), 1500)
+    try {
+      const res = await fetch('/api/organizer/create-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, name: name.trim() || 'Событие', duration }),
+      })
+      if (res.status === 401) { router.replace('/organizer'); return }
+      const data = await res.json()
+      if (!res.ok || !data.event) {
+        alert(data.error || 'Не удалось создать событие. Попробуйте ещё раз.')
+        setLoading(false)
+        return
+      }
+      // Сразу в кабинет события — он реальный, с QR и кодом.
+      router.push(`/organizer/event/${data.event.id}`)
+    } catch (e) {
+      alert('Сеть недоступна. Проверьте подключение и попробуйте снова.')
+      setLoading(false)
+    }
   }
 
   return (

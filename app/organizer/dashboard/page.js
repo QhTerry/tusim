@@ -1,12 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 
 function timeLeft(ts) {
   if (!ts) return null
@@ -39,11 +33,10 @@ export default function Dashboard() {
   async function loadEvents() {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error && data) setEvents(data)
+      const res = await fetch('/api/organizer/events')
+      if (res.status === 401) { router.replace('/organizer'); return }
+      const data = await res.json()
+      if (res.ok && data.events) setEvents(data.events)
     } catch(e) {}
     setLoading(false)
   }

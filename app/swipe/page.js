@@ -109,7 +109,11 @@ export default function SwipePage() {
     if (!liked[current.id]) {
       const nl = { ...liked, [current.id]: true }
       saveLiked(nl); setLikedCount(p => p + 1)
-      supabase.from('photos').update({ votes: (current.votes || 0) + 1 }).eq('id', current.id)
+      fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_id: current.id }),
+      }).catch(() => {})
     }
     setTimeout(() => { setFlying(null); advance() }, 420)
   }
