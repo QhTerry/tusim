@@ -383,35 +383,53 @@ export default function Home() {
         .onb-content { animation: onbIn .35s ease both; }
 
         /* PRICING */
-        .price-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        .price-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; align-items: stretch; }
         .price-card {
           background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.07);
-          border-radius: 28px; padding: 36px 28px; position: relative; overflow: hidden;
-          transition: border-color .3s, transform .25s; display: flex; flex-direction: column;
+          border-radius: 24px; padding: 30px 22px; position: relative; overflow: hidden;
+          transition: border-color .3s, transform .25s, box-shadow .3s; display: flex; flex-direction: column;
         }
         .price-card:hover { border-color: rgba(195,7,63,.25); transform: translateY(-4px); }
-        .price-card.hot { border-color: rgba(195,7,63,.3); background: rgba(195,7,63,.03); }
-        .price-badge {
-          position: absolute; top: 20px; right: 20px;
-          background: #C3073F; color: #fff; font-size: 10px; font-weight: 700;
-          padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px;
+        /* Пробный — лёгкий пунктирный акцент, без заливки */
+        .price-card.free { background: transparent; border-style: dashed; border-color: rgba(255,255,255,.1); }
+        /* Популярный — мягкий градиент + подсветка */
+        .price-card.hot {
+          border-color: rgba(195,7,63,.4);
+          background: linear-gradient(180deg, rgba(195,7,63,.10) 0%, rgba(195,7,63,.02) 100%);
+          box-shadow: 0 12px 48px rgba(195,7,63,.14);
         }
-        .price-tier { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.35); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
-        .price-amount { font-family: 'Unbounded', sans-serif; font-size: 44px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
-        .price-amount sup { font-size: 18px; vertical-align: super; letter-spacing: 0; margin-right: 2px; color: #C3073F; }
-        .price-note { font-size: 12px; color: rgba(255,255,255,.22); margin-bottom: 24px; font-weight: 300; }
-        .price-sep { height: 1px; background: rgba(255,255,255,.06); margin-bottom: 24px; }
-        .price-list { list-style: none; display: flex; flex-direction: column; gap: 10px; flex: 1; margin-bottom: 28px; }
-        .price-list li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,.5); font-weight: 300; }
-        .price-check { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; background: rgba(195,7,63,.1); border: 1px solid rgba(195,7,63,.22); display: flex; align-items: center; justify-content: center; }
+        .price-card.hot:hover { box-shadow: 0 18px 60px rgba(195,7,63,.22); }
+        .price-badge {
+          position: absolute; top: 16px; right: 16px;
+          background: #C3073F; color: #fff; font-size: 9px; font-weight: 700;
+          padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .price-tier { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; min-height: 28px; }
+        .price-card.hot .price-tier { color: rgba(255,255,255,.7); }
+        .price-amount { font-family: 'Unbounded', sans-serif; font-size: 38px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+        .price-amount sup { font-size: 16px; vertical-align: super; letter-spacing: 0; margin-right: 2px; color: #C3073F; }
+        .price-amount .free-tag { font-size: 38px; }
+        .price-note { font-size: 11px; color: rgba(255,255,255,.22); margin-bottom: 18px; font-weight: 300; }
+        /* Ключевая метрика тарифа — гости и фото */
+        .price-metric { display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; }
+        .price-metric span { font-size: 13px; color: rgba(255,255,255,.62); font-weight: 400; }
+        .price-metric b { color: #fff; font-weight: 700; }
+        .price-sep { height: 1px; background: rgba(255,255,255,.06); margin-bottom: 18px; }
+        .price-list { list-style: none; display: flex; flex-direction: column; gap: 9px; flex: 1; margin-bottom: 24px; }
+        .price-list li { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: rgba(255,255,255,.5); font-weight: 300; }
+        .price-check { width: 17px; height: 17px; flex-shrink: 0; border-radius: 50%; background: rgba(195,7,63,.1); border: 1px solid rgba(195,7,63,.22); display: flex; align-items: center; justify-content: center; }
         .price-btn {
           background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
-          color: #fff; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 600;
-          font-family: 'Onest', sans-serif; cursor: pointer; transition: all .2s;
+          color: #fff; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 600;
+          font-family: 'Onest', sans-serif; cursor: pointer; transition: all .2s; margin-top: auto;
         }
         .price-btn:hover { background: #C3073F; border-color: #C3073F; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(195,7,63,.4); }
         .price-card.hot .price-btn { background: #C3073F; border-color: #C3073F; box-shadow: 0 4px 24px rgba(195,7,63,.4); }
         .price-card.hot .price-btn:hover { box-shadow: 0 8px 36px rgba(195,7,63,.6); }
+        .price-foot { text-align: center; margin-top: 22px; font-size: 13px; color: rgba(255,255,255,.3); font-weight: 300; }
+        /* 5→3→1 в зависимости от ширины */
+        @media (max-width: 1024px) { .price-grid { grid-template-columns: repeat(3,1fr); } }
+        @media (max-width: 680px)  { .price-grid { grid-template-columns: 1fr; } }
 
         /* CTA */
         .red-line { height: 1px; background: linear-gradient(90deg,transparent,rgba(195,7,63,.2),transparent); position: relative; z-index: 2; }
@@ -456,7 +474,7 @@ export default function Home() {
           .wrap { padding: 0 20px; } .nav { padding: 0 20px; }
           .hero { padding: 100px 20px 60px; }
           .hero-h1 { font-size: clamp(30px,9vw,46px); letter-spacing: -1.5px; }
-          .steps, .price-grid { grid-template-columns: 1fr; }
+          .steps { grid-template-columns: 1fr; }
           .feats { grid-template-columns: 1fr; }
           .who-grid { grid-template-columns: repeat(3,1fr); }
           .section { padding: 68px 0; }
@@ -619,23 +637,32 @@ export default function Home() {
           <div className="sec-tag reveal">Тарифы</div>
           <div className="price-grid">
             {[
-              {name:'Тусовка',price:'299',features:['До 15 гостей','10 фото на гостя','Без watermark','Скачать ZIP'],hot:false},
-              {name:'Стандарт',price:'799',features:['До 30 гостей','20 фото на гостя','Статистика события','Скачать ZIP'],hot:true},
-              {name:'Ультра',price:'2 990',features:['До 150 гостей','30 фото на гостя','Обложка события','Слайдшоу на экран'],hot:false},
+              {name:'Пробный',     price:'0',     guests:5,   photos:2,  free:true,  features:["Галерея события","С watermark tusi'm"]},
+              {name:'Тусовка',     price:'299',   guests:15,  photos:10,              features:['Без watermark','Скачать ZIP']},
+              {name:'Стандарт',    price:'799',   guests:30,  photos:20,  hot:true,   features:['Без watermark','Скачать ZIP','Статистика события']},
+              {name:'Вечеринка',   price:'1 490', guests:60,  photos:30,              features:['Всё из Стандарта','Обложка события']},
+              {name:'Свадьба / Корп', price:'2 990', guests:150, photos:30,           features:['Всё из Вечеринки','Слайдшоу на экран']},
             ].map((p,i) => (
-              <div key={p.name} className={`price-card${p.hot?' hot':''} reveal d${i+1}`}>
+              <div key={p.name} className={`price-card${p.hot?' hot':''}${p.free?' free':''} reveal d${(i%3)+1}`}>
                 {p.hot && <div className="price-badge">Популярный</div>}
                 <div className="price-tier">{p.name}</div>
                 <div className="price-amount"><sup>₽</sup>{p.price}</div>
-                <div className="price-note">одно событие</div>
+                <div className="price-note">за одно событие</div>
+                <div className="price-metric">
+                  <span>до <b>{p.guests}</b> гостей</span>
+                  <span><b>{p.photos}</b> фото на гостя</span>
+                </div>
                 <div className="price-sep"/>
                 <ul className="price-list">
                   {p.features.map(f => <li key={f}><span className="price-check">{checkSvg}</span>{f}</li>)}
                 </ul>
-                <button className="price-btn" onClick={() => go('/organizer/create')}>Выбрать</button>
+                <button className="price-btn" onClick={() => go('/organizer/create')}>
+                  {p.free ? 'Попробовать' : 'Выбрать'}
+                </button>
               </div>
             ))}
           </div>
+          <div className="price-foot reveal">Оплата за событие — не подписка. Можно начать с бесплатного тарифа.</div>
         </div>
       </section>
 
