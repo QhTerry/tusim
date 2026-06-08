@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { toast } from '@/app/ui/Toaster'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -70,6 +71,7 @@ export default function EventManage() {
   const [lightbox, setLightbox] = useState(null)
   const [closing, setClosing] = useState(false)
   const [extending, setExtending] = useState(false)
+  const [zipping, setZipping] = useState(false)
 
   const ms = useCountdown(event?.ends_at)
   const domain = typeof window !== 'undefined' ? window.location.origin : 'https://tusim.vercel.app'
@@ -117,7 +119,7 @@ export default function EventManage() {
     })
     if (res.status === 401) { router.replace('/organizer'); return { ok: false } }
     const data = await res.json().catch(() => ({}))
-    if (!res.ok) { alert(data.error || 'Не удалось выполнить действие'); return { ok: false } }
+    if (!res.ok) { toast(data.error || 'Не удалось выполнить действие', 'error'); return { ok: false } }
     return { ok: true, ...data }
   }
 
@@ -125,20 +127,44 @@ export default function EventManage() {
     if (closing) return
     setClosing(true)
     const r = await eventAction({ action: 'close' })
-    if (r.ok) setEvent(prev => ({ ...prev, status: 'closed' }))
+    if (r.ok) { setEvent(prev => ({ ...prev, status: 'closed' })); toast('Событие закрыто', 'success') }
     setClosing(false)
   }
 
   async function reopenEvent(extraMinutes = 120) {
     const r = await eventAction({ action: 'reopen', extra_minutes: extraMinutes })
-    if (r.ok) setEvent(prev => ({ ...prev, status: 'active', ends_at: r.ends_at }))
+    if (r.ok) { setEvent(prev => ({ ...prev, status: 'active', ends_at: r.ends_at })); toast('Событие продлено', 'success') }
   }
 
   async function deletePhoto(photoId) {
+    if (!window.confirm('Удалить это фото? Действие необратимо.')) return
     const r = await eventAction({ action: 'delete_photo', photo_id: photoId })
     if (!r.ok) return
     setPhotos(prev => prev.filter(p => p.id !== photoId))
     if (lightbox?.id === photoId) setLightbox(null)
+    toast('Фото удалено', 'success')
+  }
+
+  async function downloadZip() {
+    if (zipping) return
+    setZipping(true)
+    toast('Готовлю архив…', 'info')
+    try {
+      const res = await fetch(`/api/organizer/download-zip?event_id=${eventId}`)
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}))
+        toast(e.error || 'Не удалось скачать архив', 'error')
+      } else {
+        const blob = await res.blob()
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `tusim_${event?.code || 'event'}.zip`
+        a.click()
+        URL.revokeObjectURL(a.href)
+        toast('Архив скачан', 'success')
+      }
+    } catch { toast('Сеть недоступна', 'error') }
+    setZipping(false)
   }
 
   const timerColor = isClosed ? 'rgba(255,255,255,0.2)' : ms < 15*60*1000 ? '#C3073F' : ms < 60*60*1000 ? '#F59E0B' : '#22c55e'
@@ -421,8 +447,9 @@ export default function EventManage() {
         .ev-lb-close:hover { background: rgba(255,255,255,0.14); }
       `}</style>
 
-      <div className="ev-blob ev-blob-1"/>
-      <div className="ev-blob ev-blob-2"/>
+      <div className="ds-atmos" aria-hidden="true">
+        <div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/><div className="ds-grain"/>
+      </div>
 
       <div className="ev-root">
         {/* Хедер */}
@@ -540,7 +567,7 @@ export default function EventManage() {
                 <div style={{ fontSize:13, color:'rgba(255,255,255,0.3)' }}>
                   {photos.length} фото от {guestCount} гостей
                 </div>
-                <button className="ev-btn-secondary">⬇ Скачать ZIP</button>
+                <button className="ev-btn-secondary" onClick={downloadZip} disabled={zipping}>{zipping ? '⏳ Архив…' : '⬇ Скачать ZIP'}</button>
               </div>
 
               {photos.length === 0 ? (

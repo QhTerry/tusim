@@ -1,4 +1,5 @@
 import './globals.css'
+import Toaster from './ui/Toaster'
 
 export const metadata = {
   title: "tusi'm",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
       <body style={{ margin:0, padding:0, background:'#09090b', overflowX:'hidden' }}>
         {children}
         <BottomNavWrapper />
+        <Toaster />
       </body>
     </html>
   )

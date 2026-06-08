@@ -25,13 +25,7 @@ export async function POST(request) {
 
   const { data: photo, error: dbError } = await supabase
     .from('photos')
-    .insert({
-      event_id: eventId,
-      device_id: deviceId,
-      url: urlData.publicUrl,
-      author: author,
-      votes: 0,
-    })
+    .insert({ event_id: eventId, device_id: deviceId, url: urlData.publicUrl, author, votes: 0 })
     .select()
     .single()
 

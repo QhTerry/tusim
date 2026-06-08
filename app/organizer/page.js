@@ -132,8 +132,9 @@ export default function OrganizerLogin() {
         .ol-footer a:hover { color: rgba(255,255,255,0.6); }
       `}</style>
 
-      <div className="ol-blob ol-blob-1"/>
-      <div className="ol-blob ol-blob-2"/>
+      <div className="ds-atmos" aria-hidden="true">
+        <div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/><div className="ds-grain"/>
+      </div>
 
       <div className="ol-root">
         <div className="ol-left">

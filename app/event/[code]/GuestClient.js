@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { toast } from '@/app/ui/Toaster'
 
 function getDeviceId() {
   let id = localStorage.getItem('tusim_device_id')
@@ -289,7 +290,7 @@ export default function GuestClient({ event }) {
         const stream = await navigator.mediaDevices.getUserMedia({ video:true })
         streamRef.current = stream
         if (videoRef.current) videoRef.current.srcObject = stream
-      } catch { alert('Не удалось открыть камеру.'); setCameraOpen(false) }
+      } catch { toast('Не удалось открыть камеру', 'error'); setCameraOpen(false) }
     }
   }
 
@@ -364,13 +365,13 @@ export default function GuestClient({ event }) {
         setPhotos(prev => prev.filter(p => p.id !== tempId))
         setTotalPhotos(p => Math.max(0, p - 1))
         URL.revokeObjectURL(rp.url)
-        alert('Не удалось загрузить фото. Попробуй ещё раз.')
+        toast('Не удалось загрузить фото. Попробуй ещё раз.', 'error')
       }
     } catch {
       setPhotos(prev => prev.filter(p => p.id !== tempId))
       setTotalPhotos(p => Math.max(0, p - 1))
       URL.revokeObjectURL(rp.url)
-      alert('Не удалось загрузить фото. Проверь интернет.')
+      toast('Не удалось загрузить фото. Проверь интернет.', 'error')
     }
   }
 

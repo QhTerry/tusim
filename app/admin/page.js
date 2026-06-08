@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { toast } from '@/app/ui/Toaster'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -244,18 +245,18 @@ function AdminPanel({ onLogout }) {
     if (data) setPhotos(data)
   }
 
+  async function adminAction(payload) {
+    const res = await fetch('/api/admin/action', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) { toast(data.error || 'Ошибка действия', 'error'); return { ok:false } }
+    return { ok:true, ...data }
+  }
+
   async function createEvent() {
     if (!eventName.trim()) return
     setCreating(true)
-    const code     = Math.random().toString(36).substring(2,8).toUpperCase()
-    const startsAt = startNow ? new Date().toISOString() : null
-    const endsAt   = new Date(Date.now() + duration * 60 * 1000).toISOString()
-    const { data } = await supabase.from('events').insert({
-      name: eventName.trim(), code,
-      photo_limit: photoLimit, guest_limit: guestLimit,
-      status: 'active', starts_at: startsAt, ends_at: endsAt,
-    }).select().single()
-    if (data) { setEvents(prev=>[data,...prev]); setSelected(data); setTab('photos'); setEventName('') }
+    const r = await adminAction({ action:'create_event', name: eventName.trim(), photo_limit: photoLimit, guest_limit: guestLimit, duration_min: duration, start_now: startNow })
+    if (r.ok && r.event) { setEvents(prev=>[r.event,...prev]); setSelected(r.event); setTab('photos'); setEventName(''); toast('Событие создано','success') }
     setCreating(false)
   }
 
@@ -263,22 +264,21 @@ function AdminPanel({ onLogout }) {
     if (!selected || closing) return
     if (!window.confirm('Закрыть съёмку?')) return
     setClosing(true)
-    await supabase.from('events').update({ status:'closed' }).eq('id', selected.id)
-    const upd = { ...selected, status:'closed' }
-    setSelected(upd); setEvents(prev=>prev.map(e=>e.id===selected.id?upd:e))
+    const r = await adminAction({ action:'update_event', event_id: selected.id, fields:{ status:'closed' } })
+    if (r.ok) { const upd = { ...selected, status:'closed' }; setSelected(upd); setEvents(prev=>prev.map(e=>e.id===selected.id?upd:e)); toast('Событие закрыто','success') }
     setClosing(false)
   }
 
   async function reopenEvent() {
     if (!selected) return
     const endsAt = new Date(Date.now() + 120 * 60 * 1000).toISOString() // +2ч
-    await supabase.from('events').update({ status:'active', ends_at: endsAt }).eq('id', selected.id)
-    const upd = { ...selected, status:'active', ends_at: endsAt }
-    setSelected(upd); setEvents(prev=>prev.map(e=>e.id===selected.id?upd:e))
+    const r = await adminAction({ action:'update_event', event_id: selected.id, fields:{ status:'active', ends_at: endsAt } })
+    if (r.ok) { const upd = { ...selected, status:'active', ends_at: endsAt }; setSelected(upd); setEvents(prev=>prev.map(e=>e.id===selected.id?upd:e)); toast('Событие продлено','success') }
   }
 
   async function deletePhoto(photoId) {
-    await supabase.from('photos').delete().eq('id', photoId)
+    const r = await adminAction({ action:'delete_photo', photo_id: photoId })
+    if (!r.ok) return
     setPhotos(prev => prev.filter(p => p.id !== photoId))
     if (lightbox?.id === photoId) setLightbox(null)
   }
@@ -526,8 +526,8 @@ function AdminPanel({ onLogout }) {
                           <input className="ai" type="number" min="1" max="200" defaultValue={selected.photo_limit||30} id="s-pl" style={{ maxWidth:'90px', textAlign:'center' }}/>
                           <button className="btn-r" style={{ fontSize:'13px', padding:'10px 16px' }} onClick={async()=>{
                             const v=Number(document.getElementById('s-pl').value); if(!v) return
-                            await supabase.from('events').update({photo_limit:v}).eq('id',selected.id)
-                            setSelected(p=>({...p,photo_limit:v})); setEvents(p=>p.map(e=>e.id===selected.id?{...e,photo_limit:v}:e))
+                            const r=await adminAction({ action:'update_event', event_id:selected.id, fields:{ photo_limit:v } }); if(!r.ok) return
+                            setSelected(p=>({...p,photo_limit:v})); setEvents(p=>p.map(e=>e.id===selected.id?{...e,photo_limit:v}:e)); toast('Лимит кадров обновлён','success')
                           }}>Сохранить</button>
                         </div>
                       </div>
@@ -537,8 +537,8 @@ function AdminPanel({ onLogout }) {
                           <input className="ai" type="number" min="1" max="9999" defaultValue={selected.guest_limit||150} id="s-gl" style={{ maxWidth:'90px', textAlign:'center' }}/>
                           <button className="btn-r" style={{ fontSize:'13px', padding:'10px 16px' }} onClick={async()=>{
                             const v=Number(document.getElementById('s-gl').value); if(!v) return
-                            await supabase.from('events').update({guest_limit:v}).eq('id',selected.id)
-                            setSelected(p=>({...p,guest_limit:v}))
+                            const r=await adminAction({ action:'update_event', event_id:selected.id, fields:{ guest_limit:v } }); if(!r.ok) return
+                            setSelected(p=>({...p,guest_limit:v})); toast('Лимит гостей обновлён','success')
                           }}>Сохранить</button>
                         </div>
                       </div>
@@ -550,7 +550,7 @@ function AdminPanel({ onLogout }) {
                               const current = selected.ends_at ? new Date(selected.ends_at) : new Date()
                               const base = current < new Date() ? new Date() : current
                               const newEnd = new Date(base.getTime() + m*60*1000).toISOString()
-                              await supabase.from('events').update({ends_at:newEnd, status:'active'}).eq('id',selected.id)
+                              const r=await adminAction({ action:'update_event', event_id:selected.id, fields:{ ends_at:newEnd, status:'active' } }); if(!r.ok) return
                               setSelected(p=>({...p,ends_at:newEnd,status:'active'}))
                               setEvents(p=>p.map(e=>e.id===selected.id?{...e,ends_at:newEnd,status:'active'}:e))
                             }}>+{m < 60 ? m+'мин' : m/60+'ч'}</button>
@@ -599,5 +599,5 @@ export default function AdminPage() {
   useEffect(() => { setAuthed(sessionStorage.getItem('tusim_admin') === '1') }, [])
   if (authed === null) return null
   if (!authed) return <><style>{STYLES}</style><LoginScreen onLogin={()=>setAuthed(true)}/></>
-  return <><style>{STYLES}</style><AdminPanel onLogout={()=>{ sessionStorage.removeItem('tusim_admin'); setAuthed(false) }}/></>
+  return <><style>{STYLES}</style><AdminPanel onLogout={()=>{ fetch('/api/admin-auth',{method:'DELETE'}).catch(()=>{}); sessionStorage.removeItem('tusim_admin'); setAuthed(false) }}/></>
 }

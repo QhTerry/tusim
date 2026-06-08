@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from '@/app/ui/Toaster'
 
 const PLANS = [
   { id: 'free',     name: 'Пробный',       price: 0,    guests: 5,   photos: 2,  features: ['Галерея', 'Watermark tusi\'m'] },
@@ -46,14 +47,14 @@ export default function CreateEvent() {
       if (res.status === 401) { router.replace('/organizer'); return }
       const data = await res.json()
       if (!res.ok || !data.event) {
-        alert(data.error || 'Не удалось создать событие. Попробуйте ещё раз.')
+        toast(data.error || 'Не удалось создать событие. Попробуйте ещё раз.', 'error')
         setLoading(false)
         return
       }
       // Сразу в кабинет события — он реальный, с QR и кодом.
       router.push(`/organizer/event/${data.event.id}`)
     } catch (e) {
-      alert('Сеть недоступна. Проверьте подключение и попробуйте снова.')
+      toast('Сеть недоступна. Проверьте подключение и попробуйте снова.', 'error')
       setLoading(false)
     }
   }
@@ -342,8 +343,9 @@ export default function CreateEvent() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div className="cr-blob cr-blob-1"/>
-      <div className="cr-blob cr-blob-2"/>
+      <div className="ds-atmos" aria-hidden="true">
+        <div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/><div className="ds-grain"/>
+      </div>
 
       <div className="cr-root">
         <header className="cr-header">

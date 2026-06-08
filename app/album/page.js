@@ -322,8 +322,9 @@ function AlbumInner() {
         }
       `}</style>
 
-      <div className="al-blob al-blob-1"/>
-      <div className="al-blob al-blob-2"/>
+      <div className="ds-atmos" aria-hidden="true">
+        <div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/><div className="ds-grain"/>
+      </div>
 
       {/* Floating реакции */}
       {floats.map(f => (
