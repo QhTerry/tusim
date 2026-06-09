@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { toast } from '@/app/ui/Toaster'
+import Icon from '@/app/ui/Icon'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -143,8 +144,8 @@ function QRBlock({ url }) {
         <div style={{ fontSize:'12px', color:'#555', marginBottom:'8px', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.07em' }}>Ссылка для гостей</div>
         <div style={{ fontFamily:'monospace', fontSize:'12px', color:'#777', wordBreak:'break-all', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'9px', padding:'10px 13px', marginBottom:'12px', lineHeight:1.5 }}>{url}</div>
         <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
-          <button className="btn-r" style={{ fontSize:'13px', padding:'10px 18px' }} onClick={copy}>{copied ? '✓ Скопировано' : '🔗 Копировать'}</button>
-          <button className="btn-g" onClick={dl}>⬇ Скачать QR</button>
+          <button className="btn-r" style={{ fontSize:'13px', padding:'10px 18px' }} onClick={copy}>{copied ? <><Icon name="check" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Скопировано</> : <><Icon name="copy" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Копировать</>}</button>
+          <button className="btn-g" onClick={dl}><Icon name="download" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Скачать QR</button>
         </div>
       </div>
     </div>
@@ -420,19 +421,19 @@ function AdminPanel({ onLogout }) {
                     <CountdownBadge endsAt={selected.ends_at} status={selected.status}/>
                   </div>
                   <div style={{ display:'flex', gap:'16px', fontSize:'13px', color:'#555', flexWrap:'wrap' }}>
-                    <span>📸 <b style={{ color:'#888' }}>{photos.length}</b> фото</span>
-                    <span>👥 <b style={{ color:'#888' }}>{guestCount}</b> гостей</span>
-                    <span>❤️ <b style={{ color:'#888' }}>{totalVotes}</b> лайков</span>
+                    <span><Icon name="images" size={14} style={{verticalAlign:'-2px',marginRight:5}}/><b style={{ color:'#888' }}>{photos.length}</b> фото</span>
+                    <span><Icon name="users" size={14} style={{verticalAlign:'-2px',marginRight:5}}/><b style={{ color:'#888' }}>{guestCount}</b> гостей</span>
+                    <span><Icon name="heart" size={14} style={{verticalAlign:'-2px',marginRight:5}}/><b style={{ color:'#888' }}>{totalVotes}</b> лайков</span>
                     <span>код: <b style={{ color:'#C3073F', fontFamily:'monospace', fontSize:'14px' }}>{selected.code}</b></span>
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
-                  <a href={`/album?event_id=${selected.id}`} target="_blank" style={{ textDecoration:'none' }}><button className="btn-g">📁 Альбом</button></a>
-                  <a href={`/live?event_id=${selected.id}`} target="_blank" style={{ textDecoration:'none' }}><button className="btn-g">📺 Live</button></a>
+                  <a href={`/album?event_id=${selected.id}`} target="_blank" style={{ textDecoration:'none' }}><button className="btn-g"><Icon name="images" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Альбом</button></a>
+                  <a href={`/live?event_id=${selected.id}`} target="_blank" style={{ textDecoration:'none' }}><button className="btn-g"><Icon name="eye" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Live</button></a>
                   {isClosed
-                    ? <button className="btn-g" onClick={reopenEvent}>▶ Открыть +2ч</button>
+                    ? <button className="btn-g" onClick={reopenEvent}><Icon name="play" size={14} style={{verticalAlign:'-2px',marginRight:5}}/>Открыть +2ч</button>
                     : <button className="btn-g" onClick={closeEvent} disabled={closing} style={{ borderColor:'rgba(195,7,63,0.35)', color:'#C3073F' }}>
-                        {closing ? '...' : '⏹ Закрыть'}
+                        {closing ? '...' : <><Icon name="stop" size={14} style={{verticalAlign:'-2px',marginRight:5}}/>Закрыть</>}
                       </button>
                   }
                 </div>
@@ -455,15 +456,15 @@ function AdminPanel({ onLogout }) {
               {tab === 'photos' && (
                 photos.length === 0
                   ? <div style={{ textAlign:'center', padding:'60px 0', color:'#2a2a2a', fontSize:'14px' }}>
-                      <div style={{ fontSize:'32px', marginBottom:'12px' }}>📸</div>
+                      <div style={{ marginBottom:'12px', color:'#2f2f2f' }}><Icon name="camera" size={36} stroke={1.5}/></div>
                       Пока нет фото — жди гостей
                     </div>
                   : <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(95px,1fr))', gap:'6px' }}>
                       {photos.map(photo => (
                         <div key={photo.id} className="photo-wrap">
                           <img src={photo.url} className="photo-thumb" onClick={()=>setLightbox(photo)} title={photo.author||'Гость'}/>
-                          {photo.votes > 0 && <div style={{ position:'absolute', top:'4px', left:'4px', background:'rgba(0,0,0,0.72)', borderRadius:'6px', padding:'2px 6px', fontSize:'10px', color:'#C3073F', fontWeight:700 }}>❤️{photo.votes}</div>}
-                          <button className="photo-del" onClick={()=>deletePhoto(photo.id)}>✕</button>
+                          {photo.votes > 0 && <div style={{ position:'absolute', top:'4px', left:'4px', background:'rgba(0,0,0,0.72)', borderRadius:'6px', padding:'2px 6px', fontSize:'10px', color:'#C3073F', fontWeight:700, display:'flex', alignItems:'center', gap:2 }}><Icon name="heart" size={10} stroke={2.4}/>{photo.votes}</div>}
+                          <button className="photo-del" onClick={()=>deletePhoto(photo.id)}><Icon name="x" size={13} stroke={2.4}/></button>
                         </div>
                       ))}
                     </div>
@@ -473,9 +474,9 @@ function AdminPanel({ onLogout }) {
               {tab === 'stats' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:'14px', maxWidth:'520px' }}>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px' }}>
-                    {[['📸',photos.length,'Фото'],['👥',guestCount,'Гостей'],['❤️',totalVotes,'Лайков']].map(([e,v,l]) => (
+                    {[['images',photos.length,'Фото'],['users',guestCount,'Гостей'],['heart',totalVotes,'Лайков']].map(([e,v,l]) => (
                       <div key={l} className="stat-box">
-                        <div style={{ fontSize:'22px', marginBottom:'6px' }}>{e}</div>
+                        <div style={{ marginBottom:'6px', color:'#C3073F', display:'flex', justifyContent:'center' }}><Icon name={e} size={24}/></div>
                         <div style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:'28px', color:'#F0F0F0', lineHeight:1 }}>{v}</div>
                         <div style={{ fontSize:'12px', color:'#444', marginTop:'5px', fontWeight:600 }}>{l}</div>
                       </div>
@@ -505,7 +506,7 @@ function AdminPanel({ onLogout }) {
                         {[...photos].sort((a,b)=>(b.votes||0)-(a.votes||0)).slice(0,6).map(photo => (
                           <div key={photo.id} style={{ position:'relative', cursor:'pointer' }} onClick={()=>setLightbox(photo)}>
                             <img src={photo.url} style={{ width:'100%', aspectRatio:'1', objectFit:'cover', borderRadius:'9px', display:'block' }}/>
-                            <div style={{ position:'absolute', top:'3px', right:'3px', background:'rgba(0,0,0,0.75)', borderRadius:'5px', padding:'2px 6px', fontSize:'10px', color:'#C3073F', fontWeight:700 }}>❤️{photo.votes}</div>
+                            <div style={{ position:'absolute', top:'3px', right:'3px', background:'rgba(0,0,0,0.75)', borderRadius:'5px', padding:'2px 6px', fontSize:'10px', color:'#C3073F', fontWeight:700, display:'flex', alignItems:'center', gap:2 }}><Icon name="heart" size={10} stroke={2.4}/>{photo.votes}</div>
                           </div>
                         ))}
                       </div>
@@ -563,9 +564,9 @@ function AdminPanel({ onLogout }) {
                   <div className="card">
                     <div className="lbl">Статус</div>
                     {isClosed
-                      ? <button className="btn-g" onClick={reopenEvent} style={{ width:'100%', padding:'12px', fontSize:'14px' }}>▶ Возобновить (+2 часа)</button>
+                      ? <button className="btn-g" onClick={reopenEvent} style={{ width:'100%', padding:'12px', fontSize:'14px' }}><Icon name="play" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Возобновить (+2 часа)</button>
                       : <button onClick={closeEvent} disabled={closing} style={{ width:'100%', padding:'12px', background:'rgba(195,7,63,0.08)', border:'1px solid rgba(195,7,63,0.28)', color:'#C3073F', borderRadius:'10px', fontSize:'14px', fontWeight:700, cursor:'pointer', fontFamily:"'Onest',sans-serif", transition:'background 0.15s' }}>
-                          {closing ? 'Закрываем...' : '⏹ Закрыть съёмку'}
+                          {closing ? 'Закрываем...' : <><Icon name="stop" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Закрыть съёмку</>}
                         </button>
                     }
                   </div>
@@ -579,11 +580,11 @@ function AdminPanel({ onLogout }) {
       {/* Lightbox */}
       {lightbox && (
         <div onClick={()=>setLightbox(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.96)', zIndex:2000, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px', animation:'fadeIn 0.18s ease' }}>
-          <button onClick={()=>setLightbox(null)} style={{ position:'absolute', top:'18px', right:'18px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', color:'#fff', width:'38px', height:'38px', borderRadius:'50%', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+          <button onClick={()=>setLightbox(null)} style={{ position:'absolute', top:'18px', right:'18px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', color:'#fff', width:'38px', height:'38px', borderRadius:'50%', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}><Icon name="x" size={17} stroke={2.2}/></button>
           <img src={lightbox.url} onClick={e=>e.stopPropagation()} style={{ maxWidth:'100%', maxHeight:'78dvh', objectFit:'contain', borderRadius:'14px', boxShadow:'0 24px 80px rgba(0,0,0,0.8)' }}/>
           <div style={{ marginTop:'14px', textAlign:'center' }} onClick={e=>e.stopPropagation()}>
             <div style={{ fontWeight:700, color:'#F0F0F0', fontSize:'15px', marginBottom:'4px' }}>{lightbox.author||'Гость'}</div>
-            {lightbox.votes > 0 && <div style={{ color:'#C3073F', fontSize:'13px', marginBottom:'10px' }}>❤️ {lightbox.votes} лайков</div>}
+            {lightbox.votes > 0 && <div style={{ color:'#C3073F', fontSize:'13px', marginBottom:'10px', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}><Icon name="heart" size={13} stroke={2.2}/>{lightbox.votes} лайков</div>}
             <button onClick={()=>deletePhoto(lightbox.id)} style={{ background:'rgba(195,7,63,0.1)', border:'1px solid rgba(195,7,63,0.3)', color:'#C3073F', borderRadius:'9px', padding:'8px 18px', fontSize:'13px', cursor:'pointer', fontFamily:"'Onest',sans-serif", fontWeight:600 }}>
               Удалить фото
             </button>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { toast } from '@/app/ui/Toaster'
+import Icon from '@/app/ui/Icon'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -50,9 +51,9 @@ function QRBlock({ url }) {
         <div style={{ fontFamily:'monospace', fontSize:'12px', color:'rgba(255,255,255,0.4)', wordBreak:'break-all', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', padding:'12px 14px', marginBottom:'14px', lineHeight:1.6 }}>{url}</div>
         <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
           <button className="ev-btn-primary" onClick={copy} style={{ fontSize:'13px', padding:'10px 18px' }}>
-            {copied ? '✓ Скопировано' : '🔗 Копировать'}
+            {copied ? <><Icon name="check" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Скопировано</> : <><Icon name="copy" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Копировать</>}
           </button>
-          <button className="ev-btn-secondary" onClick={dl}>⬇ Скачать QR</button>
+          <button className="ev-btn-secondary" onClick={dl}><Icon name="download" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Скачать QR</button>
         </div>
       </div>
     </div>
@@ -72,6 +73,7 @@ export default function EventManage() {
   const [closing, setClosing] = useState(false)
   const [extending, setExtending] = useState(false)
   const [zipping, setZipping] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const ms = useCountdown(event?.ends_at)
   const domain = typeof window !== 'undefined' ? window.location.origin : 'https://tusim.vercel.app'
@@ -165,6 +167,15 @@ export default function EventManage() {
       }
     } catch { toast('Сеть недоступна', 'error') }
     setZipping(false)
+  }
+
+  async function deleteEvent() {
+    if (deleting) return
+    if (!window.confirm('Удалить событие и ВСЕ фото навсегда? Это необратимо.')) return
+    setDeleting(true)
+    const r = await eventAction({ action: 'delete_event' })
+    if (r.ok) { toast('Событие удалено', 'success'); router.push('/organizer/dashboard') }
+    else setDeleting(false)
   }
 
   const timerColor = isClosed ? 'rgba(255,255,255,0.2)' : ms < 15*60*1000 ? '#C3073F' : ms < 60*60*1000 ? '#F59E0B' : '#22c55e'
@@ -472,14 +483,14 @@ export default function EventManage() {
         {/* Табы */}
         <div className="ev-tabs">
           {[
-            { id:'overview', label:'📊 Обзор' },
-            { id:'photos',   label:`📸 Фото (${photos.length})` },
-            { id:'qr',       label:'🔗 QR-код' },
-            { id:'stats',    label:'📈 Статистика' },
-            { id:'settings', label:'⚙️ Настройки' },
+            { id:'overview', icon:'grid',     label:'Обзор' },
+            { id:'photos',   icon:'images',   label:`Фото (${photos.length})` },
+            { id:'qr',       icon:'qr',       label:'QR-код' },
+            { id:'stats',    icon:'sparkles', label:'Статистика' },
+            { id:'settings', icon:'settings', label:'Настройки' },
           ].map(t => (
             <button key={t.id} className={`ev-tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id)}>
-              {t.label}
+              <Icon name={t.icon} size={14} style={{verticalAlign:'-3px',marginRight:6}}/>{t.label}
             </button>
           ))}
         </div>
@@ -516,19 +527,19 @@ export default function EventManage() {
               )}
 
               <div className="ev-actions">
-                <button className="ev-btn-primary" onClick={() => setTab('qr')}>🔗 QR-код</button>
+                <button className="ev-btn-primary" onClick={() => setTab('qr')}><Icon name="qr" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>QR-код</button>
                 <a href={`/album?event_id=${event.id}`} target="_blank" style={{textDecoration:'none'}}>
-                  <button className="ev-btn-secondary">📸 Альбом</button>
+                  <button className="ev-btn-secondary"><Icon name="images" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Альбом</button>
                 </a>
                 {isClosed ? (
-                  <button className="ev-btn-secondary" onClick={() => reopenEvent(120)}>▶ Открыть +2ч</button>
+                  <button className="ev-btn-secondary" onClick={() => reopenEvent(120)}><Icon name="play" size={14} style={{verticalAlign:'-2px',marginRight:5}}/>Открыть +2ч</button>
                 ) : (
                   <>
                     <button className="ev-btn-secondary" onClick={() => reopenEvent(30)}>+30м</button>
                     <button className="ev-btn-secondary" onClick={() => reopenEvent(60)}>+1ч</button>
                     <button className="ev-btn-secondary" onClick={() => reopenEvent(120)}>+2ч</button>
                     <button className="ev-btn-danger" onClick={closeEvent} disabled={closing}>
-                      {closing ? '...' : '⏹ Закрыть'}
+                      {closing ? '...' : <><Icon name="stop" size={14} style={{verticalAlign:'-2px',marginRight:5}}/>Закрыть</>}
                     </button>
                   </>
                 )}
@@ -544,7 +555,7 @@ export default function EventManage() {
                         <div className="ev-photo-overlay">
                           <span className="ev-photo-author">{p.author || 'Гость'}</span>
                         </div>
-                        <button className="ev-photo-del" onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}>✕</button>
+                        <button className="ev-photo-del" onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}><Icon name="x" size={13} stroke={2.4}/></button>
                       </div>
                     ))}
                   </div>
@@ -553,7 +564,7 @@ export default function EventManage() {
 
               {photos.length === 0 && (
                 <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(255,255,255,0.2)', fontSize:14 }}>
-                  <div style={{ fontSize:40, marginBottom:14 }}>📸</div>
+                  <div style={{ marginBottom:14, color:'var(--text-4)' }}><Icon name="camera" size={42} stroke={1.5}/></div>
                   Пока нет фото — жди гостей
                 </div>
               )}
@@ -567,12 +578,12 @@ export default function EventManage() {
                 <div style={{ fontSize:13, color:'rgba(255,255,255,0.3)' }}>
                   {photos.length} фото от {guestCount} гостей
                 </div>
-                <button className="ev-btn-secondary" onClick={downloadZip} disabled={zipping}>{zipping ? '⏳ Архив…' : '⬇ Скачать ZIP'}</button>
+                <button className="ev-btn-secondary" onClick={downloadZip} disabled={zipping}>{zipping ? 'Архив…' : <><Icon name="download" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Скачать ZIP</>}</button>
               </div>
 
               {photos.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(255,255,255,0.2)', fontSize:14 }}>
-                  <div style={{ fontSize:40, marginBottom:14 }}>📸</div>
+                  <div style={{ marginBottom:14, color:'var(--text-4)' }}><Icon name="camera" size={42} stroke={1.5}/></div>
                   Пока нет фото
                 </div>
               ) : (
@@ -582,9 +593,9 @@ export default function EventManage() {
                       <img src={p.url} alt="" loading="lazy"/>
                       <div className="ev-photo-overlay">
                         <span className="ev-photo-author">{p.author || 'Гость'}</span>
-                        {p.votes > 0 && <span style={{ fontSize:10, color:'#C3073F', fontWeight:700, marginLeft:'auto' }}>❤️{p.votes}</span>}
+                        {p.votes > 0 && <span style={{ fontSize:10, color:'#C3073F', fontWeight:700, marginLeft:'auto' }}><Icon name="heart" size={11} stroke={2.2} style={{verticalAlign:'-1px',marginRight:2}}/>{p.votes}</span>}
                       </div>
-                      <button className="ev-photo-del" onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}>✕</button>
+                      <button className="ev-photo-del" onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}><Icon name="x" size={13} stroke={2.4}/></button>
                     </div>
                   ))}
                 </div>
@@ -611,9 +622,9 @@ export default function EventManage() {
           {tab === 'stats' && (
             <div style={{ maxWidth:520, display:'flex', flexDirection:'column', gap:16, animation:'fadeUp 0.4s ease both' }}>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
-                {[['📸',photos.length,'Фото'],['👥',guestCount,'Гостей'],['❤️',photos.reduce((s,p)=>s+(p.votes||0),0),'Лайков']].map(([e,v,l]) => (
+                {[['images',photos.length,'Фото'],['users',guestCount,'Гостей'],['heart',photos.reduce((s,p)=>s+(p.votes||0),0),'Лайков']].map(([e,v,l]) => (
                   <div key={l} style={{ background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:14, padding:18, textAlign:'center' }}>
-                    <div style={{ fontSize:22, marginBottom:8 }}>{e}</div>
+                    <div style={{ marginBottom:8, color:'var(--red)', display:'flex', justifyContent:'center' }}><Icon name={e} size={24}/></div>
                     <div style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:26, color:'#F0F0F0', letterSpacing:'-1px', lineHeight:1 }}>{v}</div>
                     <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)', marginTop:6, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px' }}>{l}</div>
                   </div>
@@ -676,13 +687,16 @@ export default function EventManage() {
                 <div className="ev-section-title" style={{ color:'#C3073F' }}>Опасная зона</div>
                 {isClosed ? (
                   <button className="ev-btn-secondary" onClick={() => reopenEvent(120)} style={{ width:'100%', justifyContent:'center', padding:'14px' }}>
-                    ▶ Возобновить съёмку (+2 часа)
+                    <Icon name="play" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Возобновить съёмку (+2 часа)
                   </button>
                 ) : (
                   <button className="ev-btn-danger" onClick={closeEvent} disabled={closing} style={{ width:'100%', justifyContent:'center', padding:'14px' }}>
-                    {closing ? 'Закрываем...' : '⏹ Закрыть съёмку навсегда'}
+                    {closing ? 'Закрываем...' : <><Icon name="stop" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Закрыть съёмку навсегда</>}
                   </button>
                 )}
+                <button className="ev-btn-secondary" onClick={deleteEvent} disabled={deleting} style={{ width:'100%', justifyContent:'center', padding:'14px', marginTop:10, color:'#ef4444', borderColor:'rgba(239,68,68,0.3)' }}>
+                  {deleting ? 'Удаляем...' : <><Icon name="trash" size={15} style={{verticalAlign:'-3px',marginRight:6}}/>Удалить событие и все фото</>}
+                </button>
               </div>
             </div>
           )}
@@ -692,11 +706,11 @@ export default function EventManage() {
       {/* Лайтбокс */}
       {lightbox && (
         <div className="ev-lightbox" onClick={() => setLightbox(null)}>
-          <button className="ev-lb-close" onClick={() => setLightbox(null)}>✕</button>
+          <button className="ev-lb-close" onClick={() => setLightbox(null)}><Icon name="x" size={18} stroke={2.2}/></button>
           <img src={lightbox.url} onClick={e => e.stopPropagation()} style={{ maxWidth:'100%', maxHeight:'75dvh', objectFit:'contain', borderRadius:14, boxShadow:'0 24px 80px rgba(0,0,0,0.8)' }}/>
           <div style={{ marginTop:16, textAlign:'center' }} onClick={e => e.stopPropagation()}>
             <div style={{ fontWeight:700, color:'#F0F0F0', fontSize:15, marginBottom:4 }}>{lightbox.author||'Гость'}</div>
-            {lightbox.votes > 0 && <div style={{ color:'#C3073F', fontSize:13, marginBottom:12 }}>❤️ {lightbox.votes}</div>}
+            {lightbox.votes > 0 && <div style={{ color:'#C3073F', fontSize:13, marginBottom:12 }}><Icon name="heart" size={13} stroke={2.2} style={{verticalAlign:'-2px',marginRight:4}}/>{lightbox.votes}</div>}
             <button onClick={() => deletePhoto(lightbox.id)} style={{ background:'rgba(195,7,63,0.1)', border:'1px solid rgba(195,7,63,0.25)', color:'#C3073F', borderRadius:10, padding:'8px 20px', fontSize:13, cursor:'pointer', fontFamily:'Onest,sans-serif', fontWeight:700 }}>
               Удалить фото
             </button>

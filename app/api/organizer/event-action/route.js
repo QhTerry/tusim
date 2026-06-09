@@ -63,5 +63,16 @@ export async function POST(request) {
     return Response.json({ ok: true })
   }
 
+  if (action === 'delete_event') {
+    const { data: ph } = await supabase.from('photos').select('url').eq('event_id', event_id)
+    const paths = (ph || []).map(p => ((p.url||'').split('/storage/v1/object/public/photos/'))[1]).filter(Boolean)
+    if (paths.length) { try { await supabase.storage.from('photos').remove(paths) } catch (e) { console.warn('storage:', e) } }
+    await supabase.from('reactions').delete().eq('event_id', event_id)
+    await supabase.from('photos').delete().eq('event_id', event_id)
+    const { error } = await supabase.from('events').delete().eq('id', event_id)
+    if (error) return Response.json({ error: error.message }, { status: 500 })
+    return Response.json({ ok: true })
+  }
+
   return Response.json({ error: 'Неизвестное действие' }, { status: 400 })
 }

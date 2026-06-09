@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from '@/app/ui/Toaster'
+import Icon from '@/app/ui/Icon'
+import Illustration from '@/app/ui/Illustration'
 
 function timeLeft(ts) {
   if (!ts) return null
@@ -266,7 +268,7 @@ export default function Dashboard() {
           {events.length > 0 && (
             <div className="db-controls">
               <div className="db-search">
-                <span className="db-search-ic">🔍</span>
+                <span className="db-search-ic"><Icon name="search" size={15} stroke={2} style={{display:'block'}}/></span>
                 <input className="db-search-input" placeholder="Поиск события или кода…" value={query} onChange={e => setQuery(e.target.value)} />
                 {query && <button className="db-search-clear" onClick={() => setQuery('')}>×</button>}
               </div>
@@ -295,7 +297,7 @@ export default function Dashboard() {
             </div>
           ) : events.length === 0 ? (
             <div className="db-empty">
-              <span className="db-empty-icon">📸</span>
+              <Illustration name="events" size={124} style={{margin:'0 auto 8px'}}/>
               <h3>Нет событий</h3>
               <p>Создай первое событие и получи QR-код<br/>для своих гостей</p>
               <button className="db-create-btn" style={{ display:'inline-flex', margin:'0 auto' }}
@@ -305,7 +307,7 @@ export default function Dashboard() {
             </div>
           ) : visibleEvents.length === 0 ? (
             <div className="db-empty" style={{ padding:'48px 24px' }}>
-              <span className="db-empty-icon">🔍</span>
+              <Illustration name="search" size={104} style={{margin:'0 auto 8px'}}/>
               <h3>Ничего не найдено</h3>
               <p>Измени запрос или фильтр</p>
             </div>
@@ -357,7 +359,7 @@ export default function Dashboard() {
                     )}
 
                     <div className="db-event-footer">
-                      {tl ? <span className="db-event-timer">⏱ Осталось {tl}</span> : <span/>}
+                      {tl ? <span className="db-event-timer"><Icon name="clock" size={13} stroke={2} style={{verticalAlign:'-2px',marginRight:5}}/>Осталось {tl}</span> : <span/>}
                       {ev.code && <span className="db-event-code" onClick={() => copyCode(ev.code)} title="Скопировать код">{ev.code}</span>}
                     </div>
 
