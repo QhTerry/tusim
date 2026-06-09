@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOrganizer, unauthorized } from '@/lib/auth'
-import { getPlan } from '@/lib/plans'
+import { getPlan, CUSTOM_LIMITS } from '@/lib/plans'
 
 function genCode() {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -17,9 +17,12 @@ export async function POST(request) {
   try { body = await request.json() } catch { body = {} }
 
   const name = (body.name || '').toString().trim().slice(0, 80) || 'Событие'
+  const isCustom = body.plan === 'custom'
   const plan = getPlan(body.plan)
-  // Длительность не больше, чем разрешает тариф.
-  const hours = Math.min(Math.max(parseInt(body.duration) || plan.durationHours, 1), plan.durationHours)
+  const clamp = (v, [lo, hi], d) => Math.min(Math.max(parseInt(v) || d, lo), hi)
+  const guests = isCustom ? clamp(body.guests, CUSTOM_LIMITS.guests, 10) : plan.guests
+  const photoLimit = isCustom ? clamp(body.photos, CUSTOM_LIMITS.photos, 10) : plan.photos
+  const hours = isCustom ? clamp(body.duration, CUSTOM_LIMITS.hours, 6) : Math.min(Math.max(parseInt(body.duration) || plan.durationHours, 1), plan.durationHours)
   const now = Date.now()
   const supabase = supabaseAdmin()
 
@@ -33,8 +36,8 @@ export async function POST(request) {
         code: genCode(),
         plan: plan.id,
         status: 'active',
-        photo_limit: plan.photos,
-        guest_limit: plan.guests,
+        photo_limit: photoLimit,
+        guest_limit: guests,
         starts_at: new Date(now).toISOString(),
         ends_at: new Date(now + hours * 3600_000).toISOString(),
       })

@@ -638,11 +638,11 @@ export default function Home() {
           <div className="sec-tag reveal">Тарифы</div>
           <div className="price-grid">
             {[
-              {name:'Пробный',     price:'0',     guests:5,   photos:2,  free:true,  features:["Галерея события","С watermark tusi'm"]},
-              {name:'Тусовка',     price:'299',   guests:15,  photos:10,              features:['Без watermark','Скачать ZIP']},
-              {name:'Стандарт',    price:'799',   guests:30,  photos:20,  hot:true,   features:['Без watermark','Скачать ZIP','Статистика события']},
-              {name:'Вечеринка',   price:'1 490', guests:60,  photos:30,              features:['Всё из Стандарта','Обложка события']},
-              {name:'Свадьба / Корп', price:'2 990', guests:150, photos:30,           features:['Всё из Вечеринки','Слайдшоу на экран']},
+              {name:'Пробный',     price:'0',     guests:3,   photos:1,  free:true,  features:["Галерея события","С watermark tusi'm"]},
+              {name:'Тусовка',     price:'299',   guests:5,   photos:5,               features:['Без watermark','Скачать ZIP','Фото вечера']},
+              {name:'Стандарт',    price:'690',   guests:15,  photos:10,  hot:true,   features:['Всё из «Тусовки»','Статистика','Модерация']},
+              {name:'Вечеринка',   price:'1 790', guests:30,  photos:15,              features:['Всё из «Стандарта»','Слайдшоу на экран','Обложка']},
+              {name:'Свадьба / Корп', price:'6 990', guests:250, photos:20,           features:['Всё включено','До 250 гостей','Хранение 180 дней']},
             ].map((p,i) => (
               <div key={p.name} className={`price-card${p.hot?' hot':''}${p.free?' free':''} reveal d${(i%3)+1}`}>
                 {p.hot && <div className="price-badge">Популярный</div>}

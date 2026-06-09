@@ -325,6 +325,18 @@ export default function GuestClient({ event }) {
     const ctx = canvas.getContext('2d')
     if (facingMode==='user') { ctx.translate(w,0); ctx.scale(-1,1) }
     ctx.drawImage(video, 0, 0, w, h)
+    if (event.plan === 'free') {
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      const fsz = Math.round(Math.min(w, h) * 0.05)
+      ctx.font = `800 ${fsz}px Unbounded, Onest, sans-serif`
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = fsz * 0.5
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'
+      const pad = Math.round(fsz * 0.7)
+      const txt = "tusi'm"
+      const tw = ctx.measureText(txt).width
+      ctx.fillText(txt, w - tw - pad, h - pad)
+    }
     canvas.toBlob((blob) => {
       if (!blob) return
       const url = URL.createObjectURL(blob)
@@ -357,7 +369,8 @@ export default function GuestClient({ event }) {
       form.append('device_id', deviceId)
       form.append('author', author)
       const res = await fetch('/api/upload', { method:'POST', body:form })
-      const { photo } = await res.json()
+      const data = await res.json().catch(() => ({}))
+      const photo = data.photo
       if (photo) {
         setPhotos(prev => prev.map(p => p.id === tempId ? { ...photo, mine:true } : p))
         URL.revokeObjectURL(rp.url)
@@ -365,7 +378,7 @@ export default function GuestClient({ event }) {
         setPhotos(prev => prev.filter(p => p.id !== tempId))
         setTotalPhotos(p => Math.max(0, p - 1))
         URL.revokeObjectURL(rp.url)
-        toast('Не удалось загрузить фото. Попробуй ещё раз.', 'error')
+        toast(data.error || 'Не удалось загрузить фото. Попробуй ещё раз.', 'error')
       }
     } catch {
       setPhotos(prev => prev.filter(p => p.id !== tempId))

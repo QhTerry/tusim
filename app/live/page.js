@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import Equalizer from '@/app/ui/Equalizer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -47,7 +48,7 @@ function LiveInner() {
         {eventName && <span style={{ fontSize:18, color:'rgba(255,255,255,0.55)', fontWeight:500 }}>· {eventName}</span>}
       </div>
       <div style={{ position:'absolute', top:32, right:32, zIndex:3, display:'flex', alignItems:'center', gap:9, fontSize:14, fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', color:'#E11D54' }}>
-        <span style={{ width:9, height:9, borderRadius:'50%', background:'#E11D54', animation:'lvPulse 1.6s infinite' }}/>Live · {photos.length}
+        <Equalizer bars={4} style={{ height:14 }}/>Live · {photos.length}
       </div>
 
       {featured ? (

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { toast } from '@/app/ui/Toaster'
 import Icon from '@/app/ui/Icon'
+import Counter from '@/app/ui/Counter'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -508,7 +509,7 @@ export default function EventManage() {
                   { val: event.plan || '—', label: 'Тариф' },
                 ].map((s, i) => (
                   <div key={i} className="ev-stat" style={{ animationDelay:`${i*0.03}s` }}>
-                    <span className="ev-stat-val" style={typeof s.val === 'string' ? {fontSize:14,marginTop:4} : {}}>{s.val}</span>
+                    <span className="ev-stat-val" style={typeof s.val === 'string' ? {fontSize:14,marginTop:4} : {}}>{typeof s.val === 'number' ? <Counter value={s.val}/> : s.val}</span>
                     <span className="ev-stat-label">{s.label}</span>
                   </div>
                 ))}

@@ -1,5 +1,6 @@
 import './globals.css'
 import Toaster from './ui/Toaster'
+import RouteProgress from './ui/RouteProgress'
 
 export const metadata = {
   title: "tusi'm",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
       <body style={{ margin:0, padding:0, overflowX:'hidden' }}>
         {children}
         <BottomNavWrapper />
+        <RouteProgress />
         <Toaster />
       </body>
     </html>
@@ -55,9 +57,9 @@ function BottomNavWrapper() {
         .nav-center-wrap { display: flex; align-items: center; justify-content: center; padding: 4px; }
         .nav-center {
           width: 54px; height: 54px; border-radius: 50%;
-          background: linear-gradient(135deg, #C3073F, #6F2232);
+          background: linear-gradient(135deg, #E11D54, #7C5CFF);
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 0 0 4px rgba(195,7,63,0.12), 0 4px 16px rgba(195,7,63,0.3);
+          box-shadow: 0 0 0 4px rgba(225,29,84,0.14), 0 6px 18px rgba(124,92,255,0.35);
           transition: transform 0.15s, box-shadow 0.15s;
           -webkit-tap-highlight-color: transparent;
         }

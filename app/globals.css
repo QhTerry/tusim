@@ -50,10 +50,12 @@
   --danger:#ef4444;  --danger-bg:rgba(239,68,68,0.12);
 
   /* Атмосфера (зависит от темы) */
-  --aurora: radial-gradient(ellipse 70% 55% at 50% -5%, rgba(225,29,84,0.09), transparent 62%),
-            radial-gradient(ellipse 50% 45% at 85% 10%, rgba(124,92,255,0.06), transparent 62%);
-  --blob-red: rgba(225,29,84,0.06);
-  --blob-violet: rgba(124,92,255,0.045);
+  --aurora: radial-gradient(ellipse 60% 50% at 50% -5%, rgba(225,29,84,0.12), transparent 60%),
+            radial-gradient(ellipse 46% 42% at 88% 6%, rgba(124,92,255,0.10), transparent 60%),
+            radial-gradient(ellipse 52% 46% at 8% 102%, rgba(255,77,125,0.07), transparent 60%);
+  --blob-red: rgba(225,29,84,0.08);
+  --blob-violet: rgba(124,92,255,0.06);
+  --blob-pink: rgba(255,77,125,0.05);
   --grain-opacity: 0.05;
   --vignette: radial-gradient(ellipse 90% 80% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%);
 
@@ -111,10 +113,12 @@
   --warn-bg:rgba(245,158,11,0.16);
   --danger-bg:rgba(239,68,68,0.12);
 
-  --aurora: radial-gradient(ellipse 70% 55% at 50% -8%, rgba(225,29,84,0.08), transparent 64%),
-            radial-gradient(ellipse 50% 45% at 85% 8%, rgba(124,92,255,0.055), transparent 64%);
-  --blob-red: rgba(225,29,84,0.06);
-  --blob-violet: rgba(124,92,255,0.05);
+  --aurora: radial-gradient(ellipse 60% 50% at 50% -8%, rgba(225,29,84,0.10), transparent 62%),
+            radial-gradient(ellipse 46% 42% at 88% 6%, rgba(124,92,255,0.08), transparent 62%),
+            radial-gradient(ellipse 52% 46% at 8% 102%, rgba(255,77,125,0.06), transparent 62%);
+  --blob-red: rgba(225,29,84,0.07);
+  --blob-violet: rgba(124,92,255,0.06);
+  --blob-pink: rgba(255,77,125,0.05);
   --grain-opacity: 0.03;
   --vignette: radial-gradient(ellipse 95% 85% at 50% 40%, transparent 60%, rgba(120,80,120,0.10) 100%);
 
@@ -155,6 +159,7 @@ input, textarea { font-family: inherit; }
 .ds-grain { position:absolute; top:-20%; left:-20%; width:140%; height:140%; opacity: var(--grain-opacity); mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: dsGrain 8s steps(6) infinite; }
 @keyframes dsGrain { 0%{transform:translate(0,0);} 20%{transform:translate(-2%,1%);} 40%{transform:translate(1%,-2%);} 60%{transform:translate(-1%,-1%);} 80%{transform:translate(2%,1%);} 100%{transform:translate(0,0);} }
 .ds-vignette { position:absolute; inset:0; background: var(--vignette); }
+.ds-atmos::before { content:''; position:absolute; width:520px; height:520px; border-radius:50%; filter:blur(130px); background:var(--blob-pink); top:26%; left:38%; animation:dsDrift 30s ease-in-out infinite alternate; }
 
 /* ===== КНОПКИ ===== */
 .ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family: var(--font-body); font-size:14px; font-weight:600; line-height:1; padding:13px 20px; border-radius: var(--r-sm); border:1px solid transparent; cursor:pointer; transition: transform var(--dur-1) var(--ease-bounce), background var(--dur-2), box-shadow var(--dur-2), border-color var(--dur-2); -webkit-tap-highlight-color: transparent; white-space:nowrap; user-select:none; }
@@ -240,4 +245,26 @@ input, textarea { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .ds-aurora,.ds-grain,.ds-blob,.ds-skeleton,.ds-spinner,.ds-reveal,.ds-pop,.ds-badge-dot.pulse { animation: none !important; }
   .ds-reveal { opacity:1; transform:none; }
+}
+
+/* ===== ДВИЖЕНИЕ v3: бары, прогресс, свечение, эквалайзер ===== */
+.ds-progress { position:fixed; top:0; left:0; height:3px; z-index:4000; background:var(--grad-cool); box-shadow:0 0 12px var(--red-glow); border-radius:0 3px 3px 0; transition:width .2s ease, opacity .35s ease; }
+
+.ds-bar { height:6px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+.ds-bar-fill { height:100%; border-radius:999px; background:var(--grad-cool); transform-origin:left; animation:dsBarIn .9s var(--ease-bounce) both; }
+@keyframes dsBarIn { from{transform:scaleX(0);} to{transform:scaleX(1);} }
+
+/* Градиентная рамка-свечение на hover (mask-trick, без перекрытия контента) */
+.ds-card-glow { position:relative; }
+.ds-card-glow::after { content:''; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:var(--grad-cool); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:0; transition:opacity .3s; pointer-events:none; }
+.ds-card-glow:hover::after { opacity:.65; }
+
+/* Эквалайзер — party-мотив */
+.ds-eq { display:inline-flex; align-items:flex-end; gap:3px; height:18px; }
+.ds-eq i { display:block; width:3px; height:40%; border-radius:2px; background:var(--grad-cool); animation:dsEq 1s ease-in-out infinite; }
+.ds-eq i:nth-child(1){animation-delay:-.6s} .ds-eq i:nth-child(2){animation-delay:-.2s} .ds-eq i:nth-child(3){animation-delay:-.9s} .ds-eq i:nth-child(4){animation-delay:-.4s} .ds-eq i:nth-child(5){animation-delay:-.1s}
+@keyframes dsEq { 0%,100%{height:30%;} 50%{height:100%;} }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-atmos::before, .ds-bar-fill, .ds-eq i { animation:none !important; }
 }

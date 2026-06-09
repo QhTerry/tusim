@@ -2,14 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from '@/app/ui/Toaster'
-
-const PLANS = [
-  { id: 'free',     name: 'Пробный',       price: 0,    guests: 5,   photos: 2,  features: ['Галерея', 'Watermark tusi\'m'] },
-  { id: 'mini',     name: 'Тусовка',       price: 299,  guests: 15,  photos: 10, features: ['Без watermark', 'Скачать ZIP'] },
-  { id: 'standard', name: 'Стандарт',      price: 799,  guests: 30,  photos: 20, features: ['Без watermark', 'Скачать ZIP', 'Статистика'], popular: true },
-  { id: 'max',      name: 'Вечеринка',     price: 1490, guests: 60,  photos: 30, features: ['Без watermark', 'Скачать ZIP', 'Статистика', 'Обложка события'] },
-  { id: 'ultra',    name: 'Свадьба / Корп',price: 2990, guests: 150, photos: 30, features: ['Без watermark', 'Скачать ZIP', 'Статистика', 'Обложка события', 'Слайдшоу на экран'] },
-]
+import { PLANS, computeCustomPrice, CUSTOM_LIMITS } from '@/lib/plans'
 
 const DURATIONS = [
   { label: '1 час',    val: 1  },
@@ -28,6 +21,8 @@ export default function CreateEvent() {
   const [duration, setDuration] = useState(3)
   const [loading, setLoading] = useState(false)
   const [payMethod, setPayMethod] = useState('card')
+  const [cfg, setCfg] = useState({ guests:20, photos:15, hours:6, stats:true, moderation:true, live:false, cover:false })
+  const customPrice = computeCustomPrice({ guests:cfg.guests, photos:cfg.photos, hours:cfg.hours, features:cfg })
 
   useEffect(() => {
     fetch('/api/me').then(r => { if (!r.ok) router.replace('/organizer') }).catch(() => router.replace('/organizer'))
@@ -42,7 +37,7 @@ export default function CreateEvent() {
       const res = await fetch('/api/organizer/create-event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, name: name.trim() || 'Событие', duration }),
+        body: JSON.stringify({ plan, name: name.trim() || 'Событие', duration: plan==='custom' ? cfg.hours : duration, ...(plan==='custom' ? { guests: cfg.guests, photos: cfg.photos } : {}) }),
       })
       if (res.status === 401) { router.replace('/organizer'); return }
       const data = await res.json()
@@ -393,11 +388,37 @@ export default function CreateEvent() {
                     </div>
                     <div className="cr-plan-guests">до {p.guests} гостей · {p.photos} фото</div>
                     <div className="cr-plan-features">
-                      {p.features.map(f => <div key={f} className="cr-plan-feat">{f}</div>)}
+                      {p.blurb.map(f => <div key={f} className="cr-plan-feat">{f}</div>)}
                     </div>
                   </div>
                 ))}
+                <div className={`cr-plan${plan === 'custom' ? ' selected' : ''}`} onClick={() => setPlan('custom')} style={{ borderStyle: plan==='custom'?'solid':'dashed' }}>
+                  <div className="cr-plan-name">Свой формат</div>
+                  <div className="cr-plan-price" style={{ color:'#9D86FF' }}>{customPrice.toLocaleString()} ₽</div>
+                  <div className="cr-plan-guests">настрой под себя</div>
+                  <div className="cr-plan-features"><div className="cr-plan-feat">Гости · фото · часы</div><div className="cr-plan-feat">Только нужные фичи</div></div>
+                </div>
               </div>
+
+              {plan === 'custom' && (
+                <div style={{ background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:18, padding:20, marginBottom:28 }}>
+                  {[['guests','Гостей',CUSTOM_LIMITS.guests],['photos','Фото на гостя',CUSTOM_LIMITS.photos],['hours','Часов съёмки',CUSTOM_LIMITS.hours]].map(([k,label,rng]) => (
+                    <div key={k} style={{ marginBottom:16 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, marginBottom:7 }}><span style={{color:'rgba(255,255,255,0.55)'}}>{label}</span><b style={{color:'#fff', fontFamily:'Unbounded,sans-serif'}}>{cfg[k]}</b></div>
+                      <input type="range" min={rng[0]} max={rng[1]} value={cfg[k]} onChange={e=>setCfg(c=>({...c,[k]:+e.target.value}))} style={{ width:'100%', accentColor:'#E11D54' }}/>
+                    </div>
+                  ))}
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap', margin:'14px 0' }}>
+                    {[['stats','Статистика'],['moderation','Модерация'],['live','Слайдшоу'],['cover','Обложка']].map(([k,label]) => (
+                      <button key={k} type="button" onClick={()=>setCfg(c=>({...c,[k]:!c[k]}))} style={{ padding:'8px 14px', borderRadius:10, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Onest,sans-serif', border:'1px solid '+(cfg[k]?'rgba(225,29,84,0.4)':'rgba(255,255,255,0.1)'), background:cfg[k]?'rgba(225,29,84,0.14)':'transparent', color:cfg[k]?'#FF4D7D':'rgba(255,255,255,0.5)' }}>{cfg[k]?'✓ ':''}{label}</button>
+                    ))}
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:14 }}>
+                    <span style={{ color:'rgba(255,255,255,0.5)', fontSize:13 }}>Итого за событие</span>
+                    <span style={{ fontFamily:'Unbounded,sans-serif', fontWeight:900, fontSize:26, background:'linear-gradient(120deg,#E11D54,#7C5CFF)', WebkitBackgroundClip:'text', backgroundClip:'text', WebkitTextFillColor:'transparent' }}>{customPrice.toLocaleString()} ₽</span>
+                  </div>
+                </div>
+              )}
               <div className="cr-nav">
                 <button className="cr-btn-next" onClick={() => setStep(2)}>
                   Продолжить →
@@ -422,7 +443,7 @@ export default function CreateEvent() {
                     autoFocus
                   />
                 </div>
-                {selectedPlan?.id !== 'free' && (
+                {selectedPlan?.id !== 'free' && plan !== 'custom' && (
                   <div className="cr-field">
                     <label>Продолжительность</label>
                     <div className="cr-durations">

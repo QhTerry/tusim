@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from '@/app/ui/Toaster'
 import Icon from '@/app/ui/Icon'
 import Illustration from '@/app/ui/Illustration'
+import Counter from '@/app/ui/Counter'
 
 function timeLeft(ts) {
   if (!ts) return null
@@ -259,7 +260,7 @@ export default function Dashboard() {
               { val: totalPhotos,   label: 'Фото' },
             ].map((s) => (
               <div key={s.label} className="db-stat">
-                <span className="db-stat-val">{s.val}</span>
+                <span className="db-stat-val"><Counter value={s.val}/></span>
                 <span className="db-stat-label">{s.label}</span>
               </div>
             ))}
@@ -320,7 +321,7 @@ export default function Dashboard() {
                 const tl = timeLeft(ev.ends_at)
                 const isActive = ev.status === 'active'
                 return (
-                  <div key={ev.id} className={`db-event${isActive ? ' active-event' : ''}`}>
+                  <div key={ev.id} className={`db-event ds-card-glow${isActive ? ' active-event' : ''}`}>
                     <div className="db-event-top">
                       <div>
                         <div className="db-event-name">{ev.name}</div>
