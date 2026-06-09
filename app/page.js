@@ -153,7 +153,7 @@ export default function Home() {
 
         .blob-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
         .blob { position: absolute; border-radius: 50%; filter: blur(120px); animation: drift 22s ease-in-out infinite; }
-        .blob-1 { width: 700px; height: 700px; background: rgba(195,7,63,0.08); top: -250px; left: -200px; }
+        .blob-1 { width: 700px; height: 700px; background: rgba(195,7,63,0.05); top: -250px; left: -200px; }
         .blob-2 { width: 450px; height: 450px; background: rgba(195,7,63,0.05); top: 45vh; right: -180px; animation-delay: -8s; }
         .blob-3 { width: 550px; height: 550px; background: rgba(195,7,63,0.03); bottom: -120px; left: 25%; animation-delay: -15s; }
         @keyframes drift { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(35px,-45px) scale(1.06);} 66%{transform:translate(-25px,35px) scale(0.96);} }
@@ -162,7 +162,7 @@ export default function Home() {
         /* Аврора — мягкое дышащее свечение сверху */
         .aurora {
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background: radial-gradient(ellipse 70% 55% at 50% -5%, rgba(195,7,63,0.14), transparent 60%);
+          background: radial-gradient(ellipse 70% 55% at 50% -5%, rgba(195,7,63,0.07), transparent 62%);
           animation: breathe 13s ease-in-out infinite; will-change: opacity, transform;
         }
         @keyframes breathe { 0%,100%{opacity:.55;transform:scale(1);} 50%{opacity:1;transform:scale(1.07);} }
@@ -240,7 +240,7 @@ export default function Home() {
           font-weight: 900; line-height: 1.08; letter-spacing: -2px;
           max-width: 820px; margin-bottom: 28px; animation: fadeUp .7s .1s ease both;
         }
-        .line2 { background: linear-gradient(115deg,#FF4D7D 0%,#E11D54 45%,#7C5CFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; display: block; filter: drop-shadow(0 4px 24px rgba(124,92,255,.25)); }
+        .line2 { background: linear-gradient(115deg,#FF4D7D 0%,#E11D54 45%,#7C5CFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; display: block; filter: drop-shadow(0 3px 14px rgba(124,92,255,.10)); }
         .line3 { color: rgba(255,255,255,.15); font-weight: 700; display: block; font-style: italic; }
         .hero-sub {
           font-size: 16px; line-height: 1.8; font-weight: 300; color: rgba(255,255,255,.38);
@@ -255,10 +255,10 @@ export default function Home() {
           background: linear-gradient(120deg,#E11D54,#7C5CFF); background-size: 160% 160%; color: #fff; border: none; border-radius: 16px;
           padding: 16px 36px; font-size: 15px; font-weight: 600;
           font-family: 'Onest', sans-serif; cursor: pointer;
-          box-shadow: 0 8px 32px rgba(225,29,84,.4);
+          box-shadow: 0 6px 18px rgba(225,29,84,.24);
           transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
         }
-        .btn-red:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 14px 48px rgba(124,92,255,.5); animation: heroGrad 3s ease infinite; }
+        .btn-red:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 26px rgba(124,92,255,.28); animation: heroGrad 3s ease infinite; }
         @keyframes heroGrad { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
         .btn-ghost {
           background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);

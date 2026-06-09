@@ -133,7 +133,7 @@ export default function SwipePage() {
     <>
       <style>{`
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        html, body { height:100%; background:#09090b; overflow:hidden; }
+        html, body { height:100%; background:var(--bg); overflow:hidden; }
 
         @keyframes fadeUp  { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
         @keyframes fadeIn  { from{opacity:0;} to{opacity:1;} }
@@ -233,7 +233,7 @@ export default function SwipePage() {
       <div className="sw-blob sw-blob-2"/>
 
       <main style={{
-        height:'100dvh', background:'#09090b',
+        height:'100dvh', background:'var(--bg)',
         display:'flex', flexDirection:'column',
         fontFamily:"'Onest',sans-serif", color:'#F0F0F0',
         userSelect:'none', overflow:'hidden', position:'relative', zIndex:1,

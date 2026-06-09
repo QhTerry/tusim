@@ -12,7 +12,7 @@ const supabase = createClient(
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Onest:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  html, body { background:#0e0e10; min-height:100%; }
+  html, body { background:var(--bg); min-height:100%; }
 
   @keyframes fadeUp  { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn  { from{opacity:0;} to{opacity:1;} }
@@ -170,7 +170,7 @@ function LoginScreen({ onLogin }) {
   }
 
   return (
-    <main style={{ minHeight:'100dvh', background:'#0e0e10', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px', fontFamily:"'Onest',sans-serif" }}>
+    <main style={{ minHeight:'100dvh', background:'transparent', position:'relative', isolation:'isolate', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px', fontFamily:"'Onest',sans-serif" }}><div className="ds-atmos" style={{position:'absolute',zIndex:-1}} aria-hidden="true"><div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/></div>
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', background:'radial-gradient(ellipse 60% 50% at 50% 0%,rgba(195,7,63,0.1) 0%,transparent 60%)' }}/>
       <div className="fade-up" style={{ width:'100%', maxWidth:'360px' }}>
         <div style={{ textAlign:'center', marginBottom:'36px' }}>
@@ -317,7 +317,7 @@ function AdminPanel({ onLogout }) {
   }
 
   return (
-    <main style={{ minHeight:'100dvh', background:'#0e0e10', color:'#F0F0F0', fontFamily:"'Onest',sans-serif" }}>
+    <main style={{ minHeight:'100dvh', background:'transparent', position:'relative', isolation:'isolate', color:'#F0F0F0', fontFamily:"'Onest',sans-serif" }}><div className="ds-atmos" style={{position:'absolute',zIndex:-1}} aria-hidden="true"><div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/></div>
 
       {/* Header */}
       <div style={{ position:'sticky', top:0, zIndex:100, background:'rgba(14,14,16,0.95)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,0.06)', padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'space-between', height:'58px' }}>

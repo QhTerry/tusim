@@ -143,7 +143,7 @@ function Onboarding({ limit, onFinish }) {
   const [step, setStep] = useState(0)
   const isLast = step === ONBOARD.length - 1
   return (
-    <main style={{ minHeight:'100dvh', background:'#09090b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif", position:'relative', overflow:'hidden' }}>
+    <main style={{ minHeight:'100dvh', background:'transparent', isolation:'isolate', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif", position:'relative', overflow:'hidden' }}><div className="ds-atmos" style={{position:'absolute',zIndex:-1}} aria-hidden="true"><div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/></div>
       <div style={{ position:'fixed', inset:0, pointerEvents:'none', background:'radial-gradient(ellipse 70% 50% at 50% 30%,rgba(195,7,63,0.09) 0%,transparent 70%)' }}/>
       <div style={{ display:'flex', gap:6, marginBottom:40, position:'relative', zIndex:1 }}>
         {ONBOARD.map((_,i) => (
@@ -396,7 +396,7 @@ export default function GuestClient({ event }) {
   function lbNext(e) { e.stopPropagation(); const i=(lightboxIdx+1)%myPhotos.length; setLightboxIdx(i); setLightboxPhoto(myPhotos[i]) }
 
   if (screen === 'loading') return (
-    <div style={{ minHeight:'100dvh', background:'#09090b', display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div style={{ minHeight:'100dvh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
       <div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid rgba(255,255,255,0.05)', borderTopColor:'#C3073F', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
     </div>
@@ -405,7 +405,7 @@ export default function GuestClient({ event }) {
   if (screen === 'denied') return (
     <>
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}`}</style>
-      <main style={{ minHeight:'100dvh', background:'#09090b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', textAlign:'center', fontFamily:"'Onest',sans-serif" }}>
+      <main style={{ minHeight:'100dvh', background:'var(--bg)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', textAlign:'center', fontFamily:"'Onest',sans-serif" }}>
         <div style={{ position:'fixed', inset:0, pointerEvents:'none', background:'radial-gradient(ellipse 60% 40% at 50% 0%,rgba(195,7,63,0.08) 0%,transparent 70%)' }}/>
         <div style={{ fontSize:64, marginBottom:24, animation:'fadeUp 0.4s ease both' }}>
           {accessDeniedReason==='closed' ? '🔒' : '🎟️'}
@@ -433,7 +433,7 @@ export default function GuestClient({ event }) {
         .confirm-btn:disabled{background:rgba(195,7,63,0.2);color:rgba(255,255,255,0.3);cursor:not-allowed;box-shadow:none;}
       `}</style>
       <div style={{ position:'fixed', width:600, height:600, borderRadius:'50%', filter:'blur(120px)', background:'rgba(195,7,63,0.08)', top:-200, left:-150, pointerEvents:'none', animation:'blobDrift 20s ease-in-out infinite alternate' }}/>
-      <main style={{ minHeight:'100dvh', background:'#09090b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif", position:'relative', zIndex:1 }}>
+      <main style={{ minHeight:'100dvh', background:'transparent', isolation:'isolate', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', fontFamily:"'Onest',sans-serif", position:'relative', zIndex:1 }}><div className="ds-atmos" style={{position:'absolute',zIndex:-1}} aria-hidden="true"><div className="ds-aurora"/><div className="ds-blob ds-blob-1"/><div className="ds-blob ds-blob-2"/></div>
         <div style={{ animation:'fadeUp 0.5s cubic-bezier(.22,1,.36,1) both', textAlign:'center', marginBottom:44 }}>
           <div style={{ fontFamily:"'Unbounded',sans-serif", fontWeight:900, fontSize:26, color:'#fff', letterSpacing:'-1.5px', marginBottom:28 }}>
             tusi<span style={{ color:'#C3073F' }}>'m</span>
